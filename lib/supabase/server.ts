@@ -10,7 +10,7 @@ export async function getSupabaseServer() {
   return createServerClient(url, key, {
     cookies: {
       getAll() { return cookieStore.getAll(); },
-      setAll(toSet) {
+      setAll(toSet: { name: string; value: string; options?: Parameters<typeof cookieStore.set>[2] }[]) {
         try { toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
         catch { /* En Server Components no se pueden escribir cookies; se actualizan en las rutas Auth. */ }
       },
