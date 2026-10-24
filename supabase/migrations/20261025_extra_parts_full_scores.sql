@@ -22,7 +22,7 @@ create table if not exists public.full_scores (
  mime_type text not null,
  uploaded_by uuid not null default auth.uid() references auth.users(id),
  created_at timestamptz not null default now(),
- constraint full_score_path check (storage_path ~ '^guiones/[0-9a-fA-F-]{36}\\.(pdf|mp3|wav|m4a|sib)$'),
+ constraint full_score_path check (storage_path ~ '^guiones/[0-9a-fA-F-]{36}\.(pdf|mp3|wav|m4a|sib)$'),
  constraint full_score_type check (mime_type in ('application/pdf','audio/mpeg','audio/wav','audio/x-wav','audio/mp4','application/octet-stream'))
 );
 alter table public.full_scores enable row level security;
@@ -37,7 +37,7 @@ with check(uploaded_by=(select auth.uid()) and exists(select 1 from public.profi
 
 drop policy if exists "Board can upload complete scores" on storage.objects;
 create policy "Board can upload complete scores" on storage.objects for insert to authenticated
-with check(bucket_id='partituras' and name ~ '^guiones/[0-9a-fA-F-]{36}\\.(pdf|mp3|wav|m4a|sib)$'
+with check(bucket_id='partituras' and name ~ '^guiones/[0-9a-fA-F-]{36}\.(pdf|mp3|wav|m4a|sib)$'
 and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.approval_status='approved' and p.role in ('directiva','superadmin')));
 
 drop policy if exists "Board can read complete scores" on storage.objects;
@@ -50,6 +50,6 @@ using(bucket_id='partituras' and exists(
 -- Sibelius en hilos: mismo control privado de roles, ruta y afiliación.
 drop policy if exists "Board can upload Sibelius scores" on storage.objects;
 create policy "Board can upload Sibelius scores" on storage.objects for insert to authenticated
-with check(bucket_id='partituras' and name ~ '^[0-9]+/[0-9a-fA-F-]{36}\\.sib$'
+with check(bucket_id='partituras' and name ~ '^[0-9]+/[0-9a-fA-F-]{36}\.sib$'
 and exists(select 1 from public.musical_parts mp where mp.id::text=split_part(name,'/',1))
 and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.approval_status='approved' and p.role in ('directiva','superadmin')));
