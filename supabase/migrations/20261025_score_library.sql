@@ -8,7 +8,7 @@ create table if not exists public.march_scores (
   musical_part_id bigint not null references public.musical_parts(id),
   storage_path text not null unique,
   mime_type text not null,
-  uploaded_by uuid not null references auth.users(id),
+  uploaded_by uuid not null default auth.uid() references auth.users(id),
   created_at timestamptz not null default now(),
   constraint score_path_matches_part check (
     split_part(storage_path, '/', 1) = musical_part_id::text
@@ -43,9 +43,6 @@ with check (
     select 1 from public.profiles p
     where p.id = (select auth.uid()) and p.approval_status = 'approved'
       and p.role in ('directiva','superadmin')
-  )
-  and exists (
-    select 1 from storage.objects o where o.bucket_id = 'partituras' and o.name = storage_path
   )
 );
 
