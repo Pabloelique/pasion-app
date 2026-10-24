@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const client = createServerClient(url, key, {
     cookies: {
       getAll() { return request.cookies.getAll(); },
-      setAll(toSet) {
+      setAll(toSet: { name: string; value: string; options?: Parameters<typeof response.cookies.set>[2] }[]) {
         toSet.forEach(({ name, value, options }) => {
           request.cookies.set(name, value);
           response.cookies.set(name, value, options);
