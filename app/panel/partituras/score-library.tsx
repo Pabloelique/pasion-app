@@ -11,6 +11,9 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  const canUpload=role==="superadmin"||role==="directiva";
  const [parts,setParts]=useState<Part[]>([]);
  const [scores,setScores]=useState<Score[]>([]);
+ const [fullScores,setFullScores]=useState<Score[]>([]);
+ const [fullName,setFullName]=useState("");
+ const [fullFile,setFullFile]=useState<File|null>(null);
  const [query,setQuery]=useState("");
  const [selectedPart,setSelectedPart]=useState<string>(canUpload?"all":String(partId??""));
  const [name,setName]=useState("");
@@ -26,6 +29,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   const [s,p]=await Promise.all([db.from("march_scores").select("id,title,musical_part_id,storage_path,mime_type,created_at").order("title"),db.from("musical_parts").select("id,name").order("id")]);
   if(s.error)setError(s.error.message);else setScores((s.data??[]) as Score[]);
   if(p.error)setError(p.error.message);else {const arr=(p.data??[]) as Part[];setParts(arr);setUploadPart(old=>old||String(arr[0]?.id??""));}
+  if(canUpload){const {data:all,error:fullError}=await db.from("full_scores").select("id,title,storage_path,mime_type,created_at").order("title");if(!fullError)setFullScores((all??[]) as Score[]);}
   setLoading(false);
  }
  useEffect(()=>{void reload();},[]);
@@ -35,6 +39,26 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   const {data,error}=await db.storage.from("partituras").createSignedUrl(s.storage_path,300,{download:false});
   if(error||!data?.signedUrl){setError(error?.message??"No se pudo abrir el archivo.");return;}
   setView({title:s.title,url:data.signedUrl,mime:s.mime_type});
+ }
+ async function uploadFull(e:React.FormEvent<HTMLFormElement>){
+  e.preventDefault();
+  if(!fullFile||!fullName.trim())return;
+  const ext=fullFile.name.toLowerCase().split(".").pop()??"";
+  const allowed=["pdf","mp3","wav","m4a","sib"];
+  if(!allowed.includes(ext)){setError("Formato de guion no admitido.");return;}
+  if(fullFile.size>20*1024*1024){setError("El archivo supera los 20 MB.");return;}
+  if(!window.confirm(`¿Guardar «${fullName}» como guion completo exclusivo de directiva?`))return;
+  setBusy(true);setError("");setMessage("");
+  const path=`guiones/${crypto.randomUUID()}.${ext}`;
+  try {
+    const {error:uploaded}=await db.storage.from("partituras").upload(path,fullFile,{contentType:ext==="sib"?"application/octet-stream":fullFile.type||"application/octet-stream",upsert:false});
+    if(uploaded)throw uploaded;
+    const mime=ext==="sib"?"application/octet-stream":fullFile.type||"application/octet-stream";
+    const {error:saved}=await db.from("full_scores").insert({title:fullName.trim(),storage_path:path,mime_type:mime});
+    if(saved)throw saved;
+    setFullName("");setFullFile(null);setMessage("Guion añadido al apartado exclusivo de directiva.");await reload();
+  }catch(e){setError(e instanceof Error?e.message:"Error al subir el guion.");}
+  finally{setBusy(false);}
  }
  async function upload(e:React.FormEvent<HTMLFormElement>){
   e.preventDefault();if(!file||!name.trim()||!uploadPart)return;
@@ -64,6 +88,17 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
    <p className="muted small">Formatos admitidos en la app: PDF, imágenes, audio y DOCX. Límite: 20 MB por archivo.</p>
    <button className="primaryButton" type="submit" disabled={busy||!parts.length}>{busy?"Subiendo…":"Subir material"}</button>
   </form></section>}
+  {canUpload&&<section className="scoreUpload"><h2>Guiones completos · Solo directiva</h2>
+   <p className="muted">Esta sección está protegida también en Supabase y no es accesible para músicos.</p>
+   <form className="scoreForm" onSubmit={e=>void uploadFull(e)}>
+    <label>Marcha<input required maxLength={160} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Nombre de la marcha"/></label>
+    <label>Guion completo (PDF, MP3, WAV, M4A o Sibelius)<input required type="file" accept=".pdf,.mp3,.wav,.m4a,.sib" onChange={e=>setFullFile(e.target.files?.[0]??null)}/></label>
+    <button type="submit" className="primaryButton" disabled={busy}>{busy?"Subiendo…":"Guardar guion para directiva"}</button>
+   </form><div className="scoreGrid">{fullScores.map(s=><article className="requestCard" key={s.id}>
+    <strong>{s.title}</strong><p className="muted small">{s.mime_type==="application/pdf"?"PDF":s.mime_type==="application/octet-stream"?"Sibelius":"Audio"}</p>
+    <button className="secondaryButton" onClick={()=>void openScore(s)}>Consultar guion</button>
+   </article>)}</div>
+  </section>}
   <section className="scoreCatalog"><h2>Material disponible</h2><div className="memberFilters">
     <label>Buscar<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar marcha…"/></label>
     {canUpload&&<label>Hilo musical<select value={selectedPart} onChange={e=>setSelectedPart(e.target.value)}><option value="all">Todos los hilos</option>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
