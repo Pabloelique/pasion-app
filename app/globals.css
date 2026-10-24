@@ -9,3 +9,25 @@
 .scoreUpload,.scoreCatalog{margin-top:26px}.scoreUpload{background:#18382a;border:1px solid #41654b;border-radius:16px;padding:20px}.scoreForm{display:grid;gap:12px}.scoreForm label{display:grid;gap:7px;font-size:14px}.scoreForm input,.scoreForm select{min-height:45px;background:#102a1d;border:1px solid #52715a;color:#fff;border-radius:10px;padding:10px;max-width:100%;font-size:16px}.scoreGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:20px}.scoreGrid .requestCard{display:flex;flex-direction:column;gap:10px}.scoreGrid .primaryButton{margin-top:auto}.scoreViewer{position:fixed;z-index:50;inset:0;background:#0d211a;padding:16px;display:flex;flex-direction:column;gap:12px}.scoreViewTop{display:flex;align-items:center;justify-content:space-between;gap:12px}.scoreFrame{flex:1;width:100%;border:0;background:white;border-radius:12px}.scoreViewer audio{width:100%;margin:auto}.scoreViewer .muted{margin:0}@media(min-width:760px){.scoreGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.scoreUpload{padding:26px}}
 
 .scoreImportLabel{display:grid;gap:7px;margin:10px 0;font-size:13px}.scoreImportLabel input,.scoreImportLabel select{width:100%;background:#102a1d;border:1px solid #52715a;border-radius:9px;color:#fff;padding:10px;font-size:15px}.scoreImportReport{margin-top:18px;border:1px solid #52715a;border-radius:12px;padding:14px}.scoreImportReport summary{cursor:pointer}.scoreImportReport pre{overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#bed6c6;font-size:12px}
+
+.calendarBox,.calendarForm,.calendarDetail{background:#18382a;border:1px solid #41654b;border-radius:17px;padding:16px;margin:20px 0}
+.calendarHeading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.calendarHeading h2{text-transform:capitalize;text-align:center;font-size:21px;margin:8px}
+.calendarHeading button{width:44px;height:44px;border-radius:12px;border:1px solid #52715a;background:#102a1d;color:#e1c680;font-size:28px;cursor:pointer}
+.calendarDays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px;text-align:center}
+.calendarDays>span{font-size:12px;font-weight:700;color:#d8c68f;padding:10px 0}
+.calendarCells{text-align:left;gap:3px}
+.calendarDay,.calendarEmpty{min-width:0;min-height:75px;border-radius:8px}
+.calendarDay{background:#102a1d;border:1px solid #355143;padding:6px 3px}
+.calendarDay>span{font-size:12px;font-weight:700;margin-left:3px}
+.calendarToday{border-color:#e1c680}
+.calendarEvents{display:flex;flex-direction:column;gap:3px;margin-top:3px}
+.calendarEvent{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;text-align:left;border:0;border-radius:5px;background:#42684a;color:white;padding:5px 3px;cursor:pointer}
+.calendar-actuacion{background:#896b37}.calendar-reunion{background:#385b82}.calendar-otro{background:#60547a}
+.calendarForm .scoreForm label{display:grid;gap:7px}.calendarForm input,.calendarForm select,.calendarForm textarea,.calendarReason textarea{min-height:46px;width:100%;background:#102a1d;border:1px solid #52715a;border-radius:10px;color:#fff;padding:10px;font-size:16px}
+.calendarDetailTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.calendarDetailTop .secondaryButton{min-height:38px;padding:8px 14px}
+.calendarChoices{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}.calendarChoices label{display:flex;align-items:center;gap:8px}
+.calendarReason{display:grid;gap:8px;margin:15px 0}
+.calendarAgenda{margin:25px 0}.calendarAgendaItem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:15px;margin:8px 0;border-radius:12px;border:1px solid #41654b;background:#18382a;color:#fff;text-align:left;cursor:pointer}.calendarAgendaItem span,.calendarAgendaItem small{color:#c3d3c5}
+@media(min-width:760px){.calendarDay,.calendarEmpty{min-height:115px}.calendarDays{gap:7px}.calendarDay{padding:8px}.calendarEvent{font-size:12px;padding:6px}}
