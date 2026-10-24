@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import LogoutButton from "./salir";
 
@@ -22,7 +23,7 @@ export default async function PanelPage() {
     <header className="header"><span className="brandIcon">♫</span><div><small>PASIÓN APP</small><h1>Hola, {profile.first_name || "músico"}</h1></div></header>
     <section className="hero"><span className="eyebrow">{role === "superadmin" ? "SUPERADMIN" : role === "directiva" ? "DIRECTIVA" : "MÚSICO"}</span><h2>Tu espacio en La Pasión</h2><p>Tu cuenta está aprobada. Ya hemos conectado el inicio de sesión real; estamos desarrollando los módulos internos y los permisos de gestión.</p></section>
     <section className="grid"><article className="tile"><span className="tileIcon">♫</span><strong>Partituras</strong><p>Próximamente: acceso privado por hilo musical.</p></article><article className="tile"><span className="tileIcon">▦</span><strong>Calendario</strong><p>Próximamente: ensayos y actuaciones.</p></article><article className="tile"><span className="tileIcon">✓</span><strong>Asistencia</strong><p>Próximamente: confirmaciones y faltas.</p></article></section>
-    {role === "superadmin" && <p className="notice">Superadmin reconocido. El panel para aprobar usuarios y asignar directiva se implementará en el siguiente módulo.</p>}
+    {(role === "superadmin" || role === "directiva") && <section className="notice"><strong>Gestión de solicitudes</strong><p>Revisa y aprueba las cuentas nuevas de la agrupación.</p><Link className="primaryButton linkButton" href="/panel/solicitudes">Ver solicitudes pendientes →</Link></section>}
     <div className="logoutArea"><LogoutButton/></div>
   </main>;
 }
