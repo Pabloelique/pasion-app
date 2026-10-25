@@ -59,7 +59,7 @@ begin
   reference,is_test,created_by,reversal_of
  ) values (
   current_date,case when original.kind='ingreso' then 'gasto' else 'ingreso' end,
-  original.category,'Anulación: '||left(original.description,170)||' ('||btrim(reason)||')',
+  original.category,left('Anulación: '||original.description||' ('||btrim(reason)||')',300),
   original.amount_cents,original.payment_method,original.reference,original.is_test,
   auth.uid(),target_id
  ) returning id into result_id;
