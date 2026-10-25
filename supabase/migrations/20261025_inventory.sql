@@ -52,7 +52,6 @@ create or replace function public.audit_inventory_changes()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
  if tg_op='UPDATE' then
-   new.updated_at=now();
    if to_jsonb(old) is distinct from to_jsonb(new) then
      insert into public.inventory_changes(asset_id,actor_id,old_data,new_data)
      values(new.id,auth.uid(),to_jsonb(old),to_jsonb(new));
@@ -64,7 +63,7 @@ begin
  return new;
 end $$;
 drop trigger if exists inventory_audit_trigger on public.band_inventory;
-create trigger inventory_audit_trigger before insert or update on public.band_inventory
+create trigger inventory_audit_trigger after insert or update on public.band_inventory
 for each row execute function public.audit_inventory_changes();
 
 create or replace function public.inventory_people()
