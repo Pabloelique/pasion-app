@@ -21,17 +21,14 @@ revoke all on public.attendance_changes from anon,authenticated;
 create or replace function public.capture_attendance_change()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
- if tg_op='INSERT' or
-    old.status is distinct from new.status or
-    old.note is distinct from new.note then
+ if tg_op='INSERT' then
    insert into public.attendance_changes
     (event_id,member_id,actor_id,old_status,new_status,old_note,new_note)
-   values
-    (new.event_id,new.user_id,new.marked_by,
-     case when tg_op='INSERT' then null else old.status end,
-     new.status,
-     case when tg_op='INSERT' then null else old.note end,
-     new.note);
+   values (new.event_id,new.user_id,new.marked_by,null,new.status,null,new.note);
+ elsif old.status is distinct from new.status or old.note is distinct from new.note then
+   insert into public.attendance_changes
+    (event_id,member_id,actor_id,old_status,new_status,old_note,new_note)
+   values (new.event_id,new.user_id,new.marked_by,old.status,new.status,old.note,new.note);
  end if;
  return new;
 end $$;
