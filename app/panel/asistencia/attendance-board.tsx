@@ -4,6 +4,7 @@ import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 type Event={id:string;title:string;event_type:string;starts_at:string};
 type Member={member_id:string;member_name:string;part_name:string;response:string|null;justification:string|null;attendance:string|null;note:string|null};
+type Audit={audit_id:number;member_name:string;actor_name:string;previous_status:string|null;current_status:string;previous_note:string|null;current_note:string|null;changed_at:string};
 type Totals={member_id:string;member_name:string;part_name:string;attended:number;absent:number;justified:number};
 const dateFormat=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
 const labels:Record<string,string>={presente:"Presente",ausente:"Ausente",justificada:"Justificada"};
@@ -22,6 +23,8 @@ export default function AttendanceBoard(){
  const [note,setNote]=useState("");
  const [state,setState]=useState("presente");
  const [showTotals,setShowTotals]=useState(false);
+ const [showAudit,setShowAudit]=useState(false);
+ const [audits,setAudits]=useState<Audit[]>([]);
  async function loadEvents(){
    setLoading(true);
    const {data,error:err}=await db.from("band_events").select("id,title,event_type,starts_at").order("starts_at",{ascending:false}).limit(150);
@@ -35,12 +38,13 @@ export default function AttendanceBoard(){
    if(err)setError(err.message);else setPeople((data??[]) as Member[]);
    setLoading(false);
  }
+ async function loadAudit(id:string){if(!id)return;const {data,error:err}=await db.rpc("attendance_event_audit",{target_event:id});if(err)setError(err.message);else setAudits((data??[]) as Audit[]);}
  async function loadTotals(){
    const {data,error:err}=await db.rpc("attendance_summary");
    if(err)setError(err.message);else setTotals((data??[]) as Totals[]);
  }
  useEffect(()=>{void loadEvents();},[]);
- useEffect(()=>{void loadRoster(eventId);},[eventId]);
+ useEffect(()=>{void loadRoster(eventId);if(showAudit)void loadAudit(eventId);},[eventId]);
  const visible=useMemo(()=>people.filter(p=>(p.member_name+" "+p.part_name).toLocaleLowerCase("es").includes(filter.toLocaleLowerCase("es"))),[people,filter]);
  const present=people.filter(p=>p.attendance==="presente").length;
  const absent=people.filter(p=>p.attendance==="ausente").length;
@@ -55,6 +59,7 @@ export default function AttendanceBoard(){
    setEditing(null);setSuccess("Asistencia registrada para "+(p.member_name||"miembro")+".");
    await loadRoster(eventId);
    if(showTotals)await loadTotals();
+   if(showAudit)await loadAudit(eventId);
  }
  return <main className="container">
   <Link className="backLink" href="/panel/calendario">← Volver al calendario</Link>
@@ -82,6 +87,15 @@ export default function AttendanceBoard(){
      </div>:<button className="secondaryButton" onClick={()=>edit(p)}>{p.attendance?"Corregir":"Pasar lista"}</button>}
     </article>)}</div>
   </>}
+  <section className="attendanceReport"><h2>Historial de correcciones</h2>
+   <p className="muted small">Solo directiva. Registro de cambios de asistencia del evento seleccionado, con fecha y responsable.</p>
+   <button className="secondaryButton" type="button" disabled={!eventId} onClick={()=>{setShowAudit(v=>!v);if(!showAudit)void loadAudit(eventId);}}>{showAudit?"Ocultar correcciones":"Consultar correcciones"}</button>
+   {showAudit&&<div className="attendanceMembers">{audits.length===0?<p className="muted">No constan correcciones registradas para este evento.</p>:audits.map(item=><article className="attendanceMember" key={item.audit_id}>
+    <div><strong>{item.member_name}</strong><p className="muted small">{dateFormat.format(new Date(item.changed_at))} · {item.actor_name}</p></div>
+    <div><strong>{item.previous_status?labels[item.previous_status]??item.previous_status:"Sin registro"}</strong> → <strong>{labels[item.current_status]??item.current_status}</strong>
+    {item.current_note&&<p className="muted small">Nota: {item.current_note}</p>}</div>
+   </article>)}</div>}
+  </section>
   <section className="attendanceReport"><h2>Resumen acumulado</h2>
    <button className="secondaryButton" onClick={()=>{setShowTotals(v=>!v);if(!showTotals)void loadTotals();}}>{showTotals?"Ocultar resumen":"Ver faltas registradas"}</button>
    {showTotals&&<div className="attendanceMembers">{totals.map(p=><article key={p.member_id} className="attendanceMember"><div><strong>{p.member_name}</strong><p className="muted small">{p.part_name}</p></div><div><strong>{p.attended}</strong> presentes · <strong>{p.absent}</strong> ausencias · <strong>{p.justified}</strong> justificadas</div></article>)}</div>}
