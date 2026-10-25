@@ -82,7 +82,7 @@ export default function BandCalendar({role}:{role:string}){
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon">▦</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Calendario</h1></div></header>
   <p className="muted">Ensayos, actuaciones y reuniones de la agrupación. Puedes navegar por cualquier mes y responder a los eventos.</p>
-  {manager&&<button className="primaryButton" type="button" onClick={()=>{setCreating(!creating);setError("");}}>+ Crear evento</button>}
+  {manager&&<div className="attendanceActions"><button className="primaryButton" type="button" onClick={()=>{setCreating(!creating);setError("");}}>+ Crear evento</button><Link href="/panel/asistencia" className="secondaryButton linkButton">Pasar lista →</Link></div>}
   {creating&&<section className="calendarForm"><h2>Nuevo evento</h2><form className="scoreForm" onSubmit={e=>void create(e)}>
    <label>Título<input required minLength={3} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Ensayo general"/></label>
    <label>Tipo<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
