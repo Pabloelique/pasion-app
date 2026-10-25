@@ -110,7 +110,7 @@ revoke all on function public.log_booking_change() from public,anon,authenticate
 
 -- Protecciones contables en la base de datos (no depender del navegador).
 create or replace function public.guard_booking_payment()
-returns trigger language plpgsql security definer set search_path='' as $
+returns trigger language plpgsql security definer set search_path='' as $guard_payment$
 declare agreed bigint;
 declare collected bigint;
 declare status_now text;
@@ -125,13 +125,13 @@ begin
  if collected+new.amount_cents>agreed then
   raise exception 'El cobro supera el importe acordado'; end if;
  return new;
-end $;
+end $guard_payment$;
 drop trigger if exists guard_booking_payment_insert on public.booking_payments;
 create trigger guard_booking_payment_insert before insert on public.booking_payments
 for each row execute function public.guard_booking_payment();
 
 create or replace function public.guard_booking_update()
-returns trigger language plpgsql security definer set search_path='' as $
+returns trigger language plpgsql security definer set search_path='' as $guard_update$
 declare collected bigint;
 begin
  if old.created_by<>new.created_by or old.is_test<>new.is_test then
@@ -144,7 +144,7 @@ begin
    raise exception 'Una contratación con cobros debe regularizarse antes de cancelarla'; end if;
  new.updated_at=now();
  return new;
-end $;
+end $guard_update$;
 drop trigger if exists booking_update_fields on public.band_bookings;
 create trigger booking_update_fields before update on public.band_bookings
 for each row execute function public.guard_booking_update();
