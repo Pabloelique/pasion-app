@@ -107,4 +107,48 @@ create trigger booking_history after insert or update on public.band_bookings
 for each row execute function public.log_booking_change();
 revoke all on function public.audit_booking() from public,anon,authenticated;
 revoke all on function public.log_booking_change() from public,anon,authenticated;
+
+-- Protecciones contables en la base de datos (no depender del navegador).
+create or replace function public.guard_booking_payment()
+returns trigger language plpgsql security definer set search_path='' as $
+declare agreed bigint;
+declare collected bigint;
+declare status_now text;
+declare demo boolean;
+begin
+ select b.fee_cents,b.status,b.is_test into agreed,status_now,demo
+ from public.band_bookings b where b.id=new.booking_id for update;
+ if not found or demo or status_now='cancelada' or agreed<=0 then
+  raise exception 'No se admiten cobros para esta contratación'; end if;
+ select coalesce(sum(p.amount_cents),0) into collected
+ from public.booking_payments p where p.booking_id=new.booking_id;
+ if collected+new.amount_cents>agreed then
+  raise exception 'El cobro supera el importe acordado'; end if;
+ return new;
+end $;
+drop trigger if exists guard_booking_payment_insert on public.booking_payments;
+create trigger guard_booking_payment_insert before insert on public.booking_payments
+for each row execute function public.guard_booking_payment();
+
+create or replace function public.guard_booking_update()
+returns trigger language plpgsql security definer set search_path='' as $
+declare collected bigint;
+begin
+ if old.created_by<>new.created_by or old.is_test<>new.is_test then
+   raise exception 'No se permite cambiar creador ni tipo de dato'; end if;
+ select coalesce(sum(p.amount_cents),0) into collected
+ from public.booking_payments p where p.booking_id=old.id;
+ if new.fee_cents<collected then
+   raise exception 'El caché no puede ser inferior al importe ya cobrado'; end if;
+ if new.status='cancelada' and collected>0 then
+   raise exception 'Una contratación con cobros debe regularizarse antes de cancelarla'; end if;
+ new.updated_at=now();
+ return new;
+end $;
+drop trigger if exists booking_update_fields on public.band_bookings;
+create trigger booking_update_fields before update on public.band_bookings
+for each row execute function public.guard_booking_update();
+revoke all on function public.guard_booking_payment() from public,anon,authenticated;
+revoke all on function public.guard_booking_update() from public,anon,authenticated;
+
 notify pgrst,'reload schema';
