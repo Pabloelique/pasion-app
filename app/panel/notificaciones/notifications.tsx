@@ -1,12 +1,14 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 type Notification={id:string;user_id:string;kind:string;source_id:string;title:string;message:string;destination:string;created_at:string;read_at:string|null};
 const label:Record<string,string>={ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
 const dateTime=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short",timeZone:"Europe/Madrid"});
 export default function Notifications({userId}:{userId:string}){
  const db=getSupabaseBrowser();
+ const router=useRouter();
  const [items,setItems]=useState<Notification[]>([]);
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
@@ -24,12 +26,13 @@ export default function Notifications({userId}:{userId:string}){
  useEffect(()=>{void load();},[]);
  const unread=items.filter(n=>!n.read_at);
  const shown=useMemo(()=>filter==="sin_leer"?items.filter(n=>!n.read_at):items,[filter,items]);
- async function mark(id:string){
+ async function mark(id:string,destination?:string){
   if(busy)return;
   setBusy(true);setError("");setSuccess("");
   const {error:err}=await db.from("app_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("user_id",userId).is("read_at",null);
   setBusy(false);if(err){setError(err.message);return;}
   setItems(old=>old.map(n=>n.id===id?{...n,read_at:new Date().toISOString()}:n));
+  if(destination)router.push(destination);
  }
  async function markAll(){
   if(busy||unread.length===0)return;
@@ -66,7 +69,7 @@ export default function Notifications({userId}:{userId:string}){
        <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
       </div><h3>{item.title}</h3>{item.message&&<p>{item.message}</p>}</div>
       <div className="notificationActions">
-       <Link className="primaryButton linkButton" href={item.destination} onClick={()=>{if(!item.read_at)void mark(item.id);}}>Ver detalle</Link>
+       <button className="primaryButton" type="button" disabled={busy} onClick={()=>{if(item.read_at)router.push(item.destination);else void mark(item.id,item.destination);}}>Ver detalle</button>
        {!item.read_at&&<button type="button" className="secondaryButton" disabled={busy} onClick={()=>void mark(item.id)}>Marcar leída</button>}
       </div>
      </article>)}</div>}
