@@ -59,7 +59,7 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
     cvs.style.height=viewport.height+"px";
     const ctx=cvs.getContext("2d");
     if(!ctx)throw new Error("No se pudo abrir el lienzo de la partitura.");
-    renderTask=pdfPage.render({canvas:cvs,canvasContext:ctx,viewport,transform:[pixelRatio,0,0,pixelRatio,0,0]});
+    renderTask=pdfPage.render({canvasContext:ctx,viewport,transform:[pixelRatio,0,0,pixelRatio,0,0]});
     await renderTask.promise;
    }catch(e){if(!cancelled&&!(e instanceof Error&&e.name==="RenderingCancelledException"))setError("No se pudo dibujar esta página.");}
   };
