@@ -71,7 +71,7 @@ export default function Bookings({userId}:{userId:string}){
  }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">♫</span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Actuaciones y contratos</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Actuaciones y contratos</h1></div></header>
   <p className="muted">Gestiona contrataciones, cachés y cobros. Los compromisos pendientes no son ingresos recibidos. El contrato firmado se conserva fuera de este registro.</p>
   <div className="bookingStats"><div><span>Contratado</span><strong>{euro(totals.contracted)}</strong></div><div><span>Cobrado</span><strong>{euro(totals.collected)}</strong></div><div><span>Pendiente</span><strong>{euro(totals.contracted-totals.collected)}</strong></div></div>
   <section className="bookingCard"><h2>{editing?"Editar actuación":"Nueva actuación"}</h2>
