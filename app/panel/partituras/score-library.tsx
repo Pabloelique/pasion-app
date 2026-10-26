@@ -1,10 +1,26 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import ScoreStand from "./score-stand";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 type Score={id:string;title:string;musical_part_id:number;storage_path:string;mime_type:string;created_at:string};
 type Part={id:number;name:string};
 const types:Record<string,string>={"application/pdf":"PDF","image/jpeg":"Imagen JPEG","image/png":"Imagen PNG","image/webp":"Imagen WebP","audio/mpeg":"Audio MP3","audio/wav":"Audio WAV","audio/x-wav":"Audio WAV","audio/mp4":"Audio M4A","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"Word DOCX"};
+type Folder={key:string;name:string;files:Score[]};
+function marchName(title:string,parts:Part[]){
+ let result=title.trim().replace(/\\.(pdf|mp3|wav|m4a|jpg|jpeg|png|webp|docx|sib)$/i,"").trim();
+ // Eliminar únicamente una etiqueta de instrumento al final, no palabras propias del título.
+ const names=[...parts.map(p=>p.name), "guion completo", "partitura general","audio","mp3","pdf"]
+  .sort((a,b)=>b.length-a.length);
+ for(const name of names){
+  const safe=name.replace(/[.*+?^${}()|[\\]\\]/g,"\\const extensions:Record<string,string>");
+  const pattern=new RegExp("(?:\\\\s*[-–—_|:]\\\\s*|\\\\s*\\\\(\\\\s*)"+safe+"(?:\\\\s*\\\\))?\\\\s*$","i");
+  const next=result.replace(pattern,"").trim();
+  if(next&&next!==result){result=next;break;}
+ }
+ return result||title.trim();
+}
+function folderKey(name:string){return name.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g," ").trim();}
 const extensions:Record<string,string>={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","audio/mpeg":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/mp4":"m4a","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx"};
 export default function ScoreLibrary({role,partId}:{role:string;partId:number|null}){
  const db=getSupabaseBrowser();
@@ -24,6 +40,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  const [error,setError]=useState("");
  const [message,setMessage]=useState("");
  const [view,setView]=useState<{title:string;url:string;mime:string}|null>(null);
+ const [expanded,setExpanded]=useState<string|null>(null);
  async function reload(){
   setLoading(true);setError("");
   const [s,p]=await Promise.all([db.from("march_scores").select("id,title,musical_part_id,storage_path,mime_type,created_at").order("title"),db.from("musical_parts").select("id,name").order("id")]);
@@ -33,7 +50,19 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   setLoading(false);
  }
  useEffect(()=>{void reload();},[]);
- const filtered=useMemo(()=>scores.filter(s=>(selectedPart==="all"||String(s.musical_part_id)===selectedPart)&&s.title.toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es"))),[scores,selectedPart,query]);
+ const folders=useMemo(()=>{
+  const visible=scores.filter(s=>selectedPart==="all"||String(s.musical_part_id)===selectedPart);
+  const map=new Map<string,Folder>();
+  for(const item of visible){
+   const name=marchName(item.title,parts);
+   const key=folderKey(name);
+   const folder=map.get(key);
+   if(folder)folder.files.push(item);
+   else map.set(key,{key,name,files:[item]});
+  }
+  return [...map.values()].filter(g=>(g.name+" "+g.files.map(x=>x.title).join(" ")).toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es")))
+   .sort((a,b)=>a.name.localeCompare(b.name,"es"));
+ },[scores,parts,selectedPart,query]);
  async function openScore(s:Score){
   setError("");
   const {data,error}=await db.storage.from("partituras").createSignedUrl(s.storage_path,300,{download:false});
@@ -105,11 +134,18 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   </div>
   {error&&<p role="alert" className="formError">{error}</p>}
   {message&&<p role="status" className="formSuccess">{message}</p>}
-  {loading?<p className="muted">Cargando biblioteca…</p>:filtered.length===0?<p className="muted">Todavía no hay materiales para este hilo.</p>:<div className="scoreGrid">{filtered.map(s=><article key={s.id} className="requestCard"><div className="memberHeader"><strong>{s.title}</strong><span className="memberTag">{types[s.mime_type]??"Archivo"}</span></div><p className="muted small">{parts.find(p=>p.id===s.musical_part_id)?.name??"Hilo musical"}</p><button className="primaryButton" onClick={()=>void openScore(s)}>Abrir material</button></article>)}</div>}
+  {loading?<p className="muted">Cargando biblioteca…</p>:folders.length===0?<p className="muted">No hay marchas para estos filtros.</p>:<div className="marchFolderGrid">{folders.map(folder=><article key={folder.key} className="marchFolder">
+    <button type="button" className="marchFolderHeader" aria-expanded={expanded===folder.key} onClick={()=>setExpanded(old=>old===folder.key?null:folder.key)}>
+     <span className="marchFolderIcon" aria-hidden="true">▣</span><span className="marchFolderText"><strong>{folder.name}</strong><small>{folder.files.length} {folder.files.length===1?"archivo":"archivos"} · {folder.files.some(f=>f.mime_type==="application/pdf"||f.mime_type.startsWith("image/"))?"Partitura":""} {folder.files.some(f=>f.mime_type.startsWith("audio/"))?"· Audio":""}</small></span><span aria-hidden="true">{expanded===folder.key?"−":"+"}</span>
+    </button>
+    {expanded===folder.key&&<div className="marchFolderContents">{folder.files.map(item=><div className="marchFile" key={item.id}>
+     <div><strong>{item.title}</strong><small>{types[item.mime_type]??"Archivo"} · {parts.find(p=>p.id===item.musical_part_id)?.name??"Hilo musical"}</small></div>
+     <button className="primaryButton" type="button" onClick={()=>void openScore(item)}>{item.mime_type==="application/pdf"||item.mime_type.startsWith("image/")?"Modo atril":"Abrir"}</button>
+    </div>)}</div>}
+   </article>)}</div>}
   </section>
-  {view&&<section className="scoreViewer" role="dialog" aria-label={view.title}><div className="scoreViewTop"><strong>{view.title}</strong><button className="secondaryButton" onClick={()=>setView(null)}>Cerrar</button></div>
-   {view.mime==="application/pdf"||view.mime.startsWith("image/")?<iframe className="scoreFrame" src={view.url} title={view.title} referrerPolicy="no-referrer"/>:view.mime.startsWith("audio/")?<audio controls src={view.url}/>:<p className="muted">Este documento no tiene visor integrado. La directiva puede facilitar una versión PDF para su consulta.</p>}
-   <p className="muted small">Acceso temporal y personal. No compartas materiales de la agrupación. No es posible impedir todas las capturas o descargas mediante el navegador.</p>
-  </section>}
+  {view&&(view.mime==="application/pdf"||view.mime.startsWith("image/")?<ScoreStand url={view.url} title={view.title} mime={view.mime} onClose={()=>setView(null)}/>:<section className="scoreViewer" role="dialog" aria-label={view.title}><div className="scoreViewTop"><strong>{view.title}</strong><button className="secondaryButton" onClick={()=>setView(null)}>Cerrar</button></div>
+    {view.mime.startsWith("audio/")?<audio controls autoPlay src={view.url}/>:<p className="muted">Este formato no tiene visor integrado. Solicita una versión PDF para utilizar el modo atril.</p>}
+   </section>)}
  </main>;
 }
