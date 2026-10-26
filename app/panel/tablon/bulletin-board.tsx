@@ -57,7 +57,7 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
  }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">✉</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Tablón de anuncios</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Tablón de anuncios</h1></div></header>
   <p className="muted">Comunicados y conversación interna. Solo los miembros aprobados pueden acceder.</p>
   {isBoard&&<section className="boardComposer">
    <h2>Publicar comunicado</h2>
