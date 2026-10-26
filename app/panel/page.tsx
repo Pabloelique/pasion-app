@@ -17,6 +17,7 @@ const shortcuts=[
  {href:"/panel/calendario",icon:"▦",name:"Calendario",detail:"Ensayos, actuaciones y disponibilidad"},
  {href:"/panel/partituras",icon:"♫",name:"Partituras",detail:"Tu repertorio e instrumentos"},
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
+ {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
  {href:"/panel/votaciones",icon:"◉",name:"Votaciones",detail:"Propuestas de nuevas marchas"},
