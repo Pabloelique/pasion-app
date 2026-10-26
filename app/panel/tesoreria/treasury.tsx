@@ -79,7 +79,7 @@ export default function Treasury({userId}:{userId:string}){
  }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">€</span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Tesorería</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Tesorería</h1></div></header>
   <p className="muted">Libro interno de movimientos económicos. Solo directiva y superadmin. No realiza pagos, facturas ni conciliación bancaria automática.</p>
   <section className="treasuryCard"><h2>Registrar movimiento</h2>
    <form className="treasuryForm" onSubmit={e=>void add(e)}>
