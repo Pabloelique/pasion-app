@@ -69,7 +69,7 @@ export default async function PanelPage(){
  const totalPresent=attendance.reduce((sum,row)=>sum+Number(row.attended||0),0);
  return <main className="container dashboard">
   <header className="header dashboardHeader">
-   <span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
+   <span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
    <div className="dashboardHeaderActions"><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">{profile.role==="superadmin"?"Superadmin":manager?"Directiva":"Músico"}</span></div>
   </header>
   <section className="dashboardWelcome">
