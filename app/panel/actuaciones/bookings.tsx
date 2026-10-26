@@ -19,7 +19,6 @@ export default function Bookings({userId}:{userId:string}){
  const [editing,setEditing]=useState<string|null>(null);
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const [filter,setFilter]=useState("todos"),[search,setSearch]=useState("");
- const [includeTest,setIncludeTest]=useState(false);
  const [paying,setPaying]=useState<string|null>(null),[paidAmount,setPaidAmount]=useState("");
  const [paidDate,setPaidDate]=useState(today()),[paidMethod,setPaidMethod]=useState("transferencia"),[paidRef,setPaidRef]=useState("");
  const [error,setError]=useState(""),[success,setSuccess]=useState("");
@@ -33,7 +32,7 @@ export default function Bookings({userId}:{userId:string}){
  }
  useEffect(()=>{void reload();},[]);
  const sums=useMemo(()=>{const by=new Map<string,number>();payments.forEach(p=>by.set(p.booking_id,(by.get(p.booking_id)??0)+p.amount_cents));return by;},[payments]);
- const shown=useMemo(()=>bookings.filter(b=>(includeTest||!b.is_test)&&(filter==="todos"||b.status===filter)&&[b.title,b.customer_name,b.location].join(" ").toLocaleLowerCase("es").includes(search.toLocaleLowerCase("es"))),[bookings,filter,search,includeTest]);
+ const shown=useMemo(()=>bookings.filter(b=>!b.is_test&&(filter==="todos"||b.status===filter)&&[b.title,b.customer_name,b.location].join(" ").toLocaleLowerCase("es").includes(search.toLocaleLowerCase("es"))),[bookings,filter,search]);
  const confirmed=bookings.filter(b=>!b.is_test&&["confirmada","realizada"].includes(b.status));
  const totals={contracted:confirmed.reduce((a,b)=>a+b.fee_cents,0),collected:confirmed.reduce((a,b)=>a+(sums.get(b.id)??0),0)};
  const loadEdit=(b:Booking)=>{setEditing(b.id);setForm({title:b.title,customer_name:b.customer_name,location:b.location,performance_date:b.performance_date,start_time:b.start_time?.slice(0,5)??"",duration_minutes:b.duration_minutes===null?"":String(b.duration_minutes),status:b.status,fee:(b.fee_cents/100).toFixed(2),notes:b.notes,contract_reference:b.contract_reference,is_test:b.is_test});setError("");setSuccess("");window.scrollTo({top:0,behavior:"smooth"});};
@@ -86,14 +85,12 @@ export default function Bookings({userId}:{userId:string}){
     <label>Caché acordado (€)<input inputMode="decimal" value={form.fee} onChange={e=>field("fee",e.target.value)} placeholder="Ej. 650,00"/></label>
     <label>Referencia del contrato<input maxLength={200} value={form.contract_reference} onChange={e=>field("contract_reference",e.target.value)} placeholder="Código interno o nombre del PDF"/></label>
     <label className="bookingWide">Observaciones<textarea rows={3} maxLength={2500} value={form.notes} onChange={e=>field("notes",e.target.value)} placeholder="Repertorio, condiciones, contacto…"/></label>
-    <label className="bookingCheckbox"><input type="checkbox" checked={form.is_test} disabled={!!editing} onChange={e=>field("is_test",e.target.checked)}/> Registro de prueba</label>
     <div className="bookingActions"><button type="submit" className="primaryButton" disabled={busy}>{busy?"Guardando…":editing?"Guardar cambios":"Registrar actuación"}</button>{editing&&<button type="button" className="secondaryButton" onClick={reset}>Cancelar</button>}</div>
    </form>
   </section>
   <section className="bookingCard">
    <div className="bookingHead"><h2>Contrataciones ({shown.length})</h2><button className="secondaryButton" type="button" onClick={exportCsv} disabled={!shown.length}>Exportar CSV</button></div>
    <div className="bookingFilters"><label>Buscar<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Actuación o cofradía"/></label><label>Estado<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todos">Todos</option>{Object.entries(statuses).map(([v,t])=><option key={v} value={v}>{t}</option>)}</select></label></div>
-   <label className="bookingCheckbox"><input type="checkbox" checked={includeTest} onChange={e=>setIncludeTest(e.target.checked)}/> Mostrar registros de prueba</label>
    {error&&<p className="formError" role="alert">{error}</p>}
    {success&&<p className="formSuccess" role="status">{success}</p>}
    {loading?<p className="muted">Cargando contrataciones…</p>:shown.length===0?<p className="muted">Todavía no hay actuaciones para estos filtros.</p>:<div className="bookingList">{shown.map(b=>{
