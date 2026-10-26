@@ -43,7 +43,6 @@ for update to authenticated using (
 create or replace function public.guard_official_repertoire()
 returns trigger language plpgsql security invoker set search_path='' as $repertoire_guard$
 declare u text;
-declare s text;
 begin
  if tg_op='UPDATE' then
   if new.id is distinct from old.id
@@ -61,11 +60,11 @@ begin
   end if;
  end loop;
  if new.youtube_url<>'' and
-    new.youtube_url !~* '^https://(www\\.)?(youtube\\.com|youtu\\.be|music\\.youtube\\.com)/' then
+    not (new.youtube_url ilike 'https://youtube.com/%' or new.youtube_url ilike 'https://www.youtube.com/%' or new.youtube_url ilike 'https://youtu.be/%' or new.youtube_url ilike 'https://music.youtube.com/%') then
    raise exception 'El enlace de YouTube no es válido';
  end if;
  if new.spotify_url<>'' and
-    new.spotify_url !~* '^https://open\\.spotify\\.com/(track|album|episode|playlist)/' then
+    not (new.spotify_url like 'https://open.spotify.com/track/%' or new.spotify_url like 'https://open.spotify.com/album/%' or new.spotify_url like 'https://open.spotify.com/episode/%' or new.spotify_url like 'https://open.spotify.com/playlist/%') then
    raise exception 'El enlace de Spotify no es válido';
  end if;
  if new.from_proposal is not null and
