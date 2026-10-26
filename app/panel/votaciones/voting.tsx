@@ -102,6 +102,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
       <div className="voteResultLine"><span>Sí: {yes} ({total?Math.round(100*yes/total):0} %)</span><div><i style={{width:(total?100*yes/total:0)+"%"}}/></div></div>
       <div className="voteResultLine"><span>No: {no} ({total?Math.round(100*no/total):0} %)</span><div><i style={{width:(total?100*no/total:0)+"%"}}/></div></div>
      </div>}
+     {canManage&&done&&<p className="muted small">¿Habéis decidido incorporarla? <Link href="/panel/repertorio">Gestionar repertorio oficial →</Link></p>}
      {canManage&&!done&&<button className="voteClose" type="button" disabled={busy} onClick={()=>void close(p)}>Cerrar votación ahora</button>}
      {p.estimated_cost!==null&&<details className="voteContribution">
       <summary>Simular aportación voluntaria</summary>
