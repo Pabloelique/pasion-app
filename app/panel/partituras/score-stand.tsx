@@ -9,7 +9,7 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
  const [pdf,setPdf]=useState<PdfDocument|null>(null);
  const [pages,setPages]=useState(1);
  const [page,setPage]=useState(1);
- const [showControls,setShowControls]=useState(true);
+ const [showControls,setShowControls]=useState(false);
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(mime==="application/pdf");
  const pdfMode=mime==="application/pdf";
@@ -79,20 +79,22 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
  const next=()=>setPage(n=>Math.min(pages,n+1));
  const prev=()=>setPage(n=>Math.max(1,n-1));
  const isImage=mime.startsWith("image/");
+ const [tip,setTip]=useState(true);
+ const tap=(action:()=>void)=>{action();setTip(false);};
  return <div className="scoreStand" role="dialog" aria-modal="true" aria-label={"Modo atril: "+title}>
    <div className="scoreStandSurface" ref={surface}>
     {pdfMode?<canvas ref={canvas} className="scoreStandCanvas" aria-label={title+" página "+page}/>:isImage?<img className="scoreStandImage" src={url} alt={title}/>:null}
     {loading&&<span className="scoreStandLoading">Preparando partitura…</span>}
     {error&&<span className="scoreStandLoading" role="alert">{error}</span>}
     {pdfMode&&pages>1&&!loading&&<div className="scoreStandTouch" aria-label="Pasar página">
-      <button aria-label="Página anterior" disabled={page===1} onClick={prev}/>
-      <button aria-label="Página siguiente" disabled={page===pages} onClick={next}/>
+      <button aria-label="Página anterior" disabled={page===1} onClick={()=>tap(prev)}/>
+      <button aria-label="Página siguiente" disabled={page===pages} onClick={()=>tap(next)}/>
     </div>}
    </div>
    <div className="scoreStandTop">
     <button type="button" className="scoreStandToggle" onClick={()=>setShowControls(x=>!x)} aria-label={showControls?"Ocultar controles":"Mostrar controles"}>{showControls?"⋯":"☰"}</button>
     {showControls&&<div className="scoreStandToolbar"><span title={title}>{title}</span>{pdfMode&&pages>1&&<span>{page} / {pages}</span>}<button type="button" onClick={onClose}>Salir</button></div>}
    </div>
-   <span className="scoreStandTip">Coloca el móvil en horizontal. {pdfMode&&pages>1?"Toca los lados para cambiar de página.":""}</span>
+   {tip&&<span className="scoreStandTip">Gira el móvil en horizontal. {pdfMode&&pages>1?"Toca los lados para pasar página.":""}</span>}
  </div>;
 }
