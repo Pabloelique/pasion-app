@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Gestión musical de la Agrupación La Pasión de Mazarrón",
   applicationName: "PASIÓN APP",
   manifest: "/manifest.webmanifest",
+  icons: {icon:[{url:"/icons/logo-192.png",sizes:"192x192",type:"image/png"}],apple:[{url:"/icons/logo-192.png",sizes:"192x192",type:"image/png"}],shortcut:"/icons/logo-192.png"},
 };
 
 export const viewport: Viewport = {
