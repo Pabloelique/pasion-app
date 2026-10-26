@@ -19,7 +19,8 @@ const shortcuts=[
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
- {href:"/panel/votaciones",icon:"◉",name:"Votaciones",detail:"Propuestas de nuevas marchas"}
+ {href:"/panel/votaciones",icon:"◉",name:"Votaciones",detail:"Propuestas de nuevas marchas"},
+ {href:"/panel/notificaciones",icon:"♧",name:"Notificaciones",detail:"Avisos internos y novedades"}
 ];
 const management=[
  {href:"/panel/solicitudes",icon:"◎",name:"Solicitudes",detail:"Aprobaciones de acceso"},
@@ -45,17 +46,19 @@ export default async function PanelPage(){
 
  const manager=profile.role==="directiva"||profile.role==="superadmin";
  const now=new Date().toISOString();
- const [eventsResult,postsResult,responsesResult,proposalsResult]=await Promise.all([
+ const [eventsResult,postsResult,responsesResult,proposalsResult,notificationsResult]=await Promise.all([
   db.from("band_events").select("id,title,event_type,location,starts_at").gte("starts_at",now).order("starts_at",{ascending:true}).limit(5),
   db.from("board_posts").select("id,title,content,priority,created_at").order("created_at",{ascending:false}).limit(5),
   db.from("event_responses").select("event_id,response").eq("user_id",user.id).limit(50),
-  db.from("march_proposals").select("id,closes_at,closed_at").is("closed_at",null).gt("closes_at",now).limit(100)
+  db.from("march_proposals").select("id,closes_at,closed_at").is("closed_at",null).gt("closes_at",now).limit(100),
+  db.from("app_notifications").select("id",{count:"exact",head:true}).eq("user_id",user.id).is("read_at",null)
  ]);
  const events=(eventsResult.data??[]) as EventItem[];
  const posts=(postsResult.data??[]) as PostItem[];
  const responses=new Map(((responsesResult.data??[]) as ResponseItem[]).map(x=>[x.event_id,x.response]));
  const openVotes=proposalsResult.error?null:(proposalsResult.data??[]).length;
  const important=posts.filter(p=>p.priority==="importante");
+ const unread=notificationsResult.error?null:(notificationsResult.count??0);
  const issues=[eventsResult.error,postsResult.error,responsesResult.error].some(Boolean);
  const [pendingResult,attendanceResult]=manager?await Promise.all([
   db.from("profiles").select("id",{count:"exact",head:true}).eq("approval_status","pending"),
@@ -67,7 +70,7 @@ export default async function PanelPage(){
  return <main className="container dashboard">
   <header className="header dashboardHeader">
    <span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
-   <span className="dashboardRole">{profile.role==="superadmin"?"Superadmin":manager?"Directiva":"Músico"}</span>
+   <div className="dashboardHeaderActions"><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">{profile.role==="superadmin"?"Superadmin":manager?"Directiva":"Músico"}</span></div>
   </header>
   <section className="dashboardWelcome">
    <span className="eyebrow">TU CENTRO DE CONTROL</span>
@@ -80,6 +83,7 @@ export default async function PanelPage(){
   </section>
   {issues&&<p className="muted dashboardNotice">Algunos datos no se han podido actualizar. Puedes acceder a cada apartado desde los enlaces inferiores.</p>}
   <section className="dashboardStats" aria-label="Resumen de actividad">
+   <div><span>Notificaciones sin leer</span><strong>{unread??"—"}</strong><small><Link href="/panel/notificaciones" className="dashboardStatLink">Ver bandeja</Link></small></div>
    <div><span>Próximas actividades</span><strong>{eventsResult.error?"—":events.length}</strong><small>Eventos visibles</small></div>
    <div><span>Comunicados importantes</span><strong>{postsResult.error?"—":important.length}</strong><small>Entre los cinco últimos</small></div>
    <div><span>Votaciones abiertas</span><strong>{openVotes??"—"}</strong><small>Propuestas activas</small></div>
