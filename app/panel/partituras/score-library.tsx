@@ -79,7 +79,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Biblioteca de partituras</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Biblioteca de partituras</h1></div></header>
   <p className="muted">{canUpload?"Consulta todos los hilos y sube nuevos materiales musicales.":"Consulta los materiales de tu hilo musical. Los archivos son privados."}</p>
   {role==="superadmin"&&<p className="notice"><strong>Importación masiva desde Drive</strong><p>Importa todas las marchas de una carpeta, con control de duplicados y guiones restringidos a directiva.</p><Link href="/panel/partituras/importar" className="primaryButton linkButton">Abrir importador masivo →</Link></p>}{canUpload&&<section className="scoreUpload"><h2>Añadir material</h2><form onSubmit={e=>void upload(e)} className="scoreForm">
    <label>Título de la marcha o material<input value={name} onChange={e=>setName(e.target.value)} maxLength={160} placeholder="Ej. La Pasión — Corneta 1" required/></label>
