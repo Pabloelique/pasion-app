@@ -8,12 +8,20 @@ type Part={id:number;name:string};
 const types:Record<string,string>={"application/pdf":"PDF","image/jpeg":"Imagen JPEG","image/png":"Imagen PNG","image/webp":"Imagen WebP","audio/mpeg":"Audio MP3","audio/wav":"Audio WAV","audio/x-wav":"Audio WAV","audio/mp4":"Audio M4A","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"Word DOCX"};
 type Folder={key:string;name:string;files:Score[]};
 function marchName(title:string,parts:Part[]){
- let result=title.trim().replace(/\\.(pdf|mp3|wav|m4a|jpg|jpeg|png|webp|docx|sib)$/i,"").trim();
- // Eliminar únicamente una etiqueta de instrumento al final, no palabras propias del título.
- const names=[...parts.map(p=>p.name), "guion completo", "partitura general","audio","mp3","pdf"]
-  .sort((a,b)=>b.length-a.length);
+ let result=title.trim().replace(/\.(pdf|mp3|wav|m4a|jpg|jpeg|png|webp|docx|sib)$/i,"").trim();
+ const names=[...parts.map(p=>p.name),"guion completo","partitura general","audio","mp3","pdf"].sort((a,b)=>b.length-a.length);
  for(const name of names){
-  const safe=name.replace(/[.*+?^${}()|[\\]\\]/g,"\\const extensions:Record<string,string>");
+  const escaped=name.replace(/[^a-zA-Z0-9À-ÿ ]/g,"\\$&");
+  const pattern=new RegExp("(?:\\s*[-–—_|:]\\s*|\\s*\\(\\s*)"+escaped+"(?:\\s*\\))?\\s*$","i");
+  const next=result.replace(pattern,"").trim();
+  if(next&&next!==result){result=next;break;}
+ }
+ return result||title.trim();
+}
+function folderKey(name:string){
+ return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g," ").trim();
+}
+const extensions:Record<string,string>");
   const pattern=new RegExp("(?:\\\\s*[-–—_|:]\\\\s*|\\\\s*\\\\(\\\\s*)"+safe+"(?:\\\\s*\\\\))?\\\\s*$","i");
   const next=result.replace(pattern,"").trim();
   if(next&&next!==result){result=next;break;}
