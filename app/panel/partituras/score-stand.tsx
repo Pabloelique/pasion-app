@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 
 type Props={url:string;title:string;mime:string;onClose:()=>void};
-type PdfDocument=Awaited<ReturnType<typeof import("pdfjs-dist").getDocument>> extends {promise:Promise<infer D>} ? D : never;
+type PdfDocument=import("pdfjs-dist").PDFDocumentProxy;
 export default function ScoreStand({url,title,mime,onClose}:Props){
  const canvas=useRef<HTMLCanvasElement>(null);
  const surface=useRef<HTMLDivElement>(null);
