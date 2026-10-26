@@ -103,10 +103,10 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
    {loading?<p className="muted">Cargando repertorio…</p>:selected.length===0?<p className="muted">{query?"No hay marchas que coincidan con la búsqueda.":"Todavía no se han incorporado marchas al repertorio oficial. La directiva puede añadir las actuales sin volver a subir partituras."}</p>:<div className="repertoireList">{selected.map(m=><article className="repertoireItem" key={m.id}>
      <div className="repertoireItemHead"><span className="repertoireMusicalIcon" aria-hidden="true">♫</span><div><h3>{m.title}</h3>{m.composer&&<p className="muted small">{m.composer}</p>}</div></div>
      {m.notes&&<p className="muted small">{m.notes}</p>}
-     {m.from_proposal&&<p className="repertoireOrigin"><icon name="check-circle" size="xs" inline/> Incorporada tras votación</p>}
+     {m.from_proposal&&<p className="repertoireOrigin">✓ Incorporada tras votación</p>}
      <div className="repertoireActions">
-      {m.youtube_url&&<a className="secondaryButton linkButton" href={m.youtube_url} target="_blank" rel="noopener noreferrer"> <icon name="play-circle" inline/> YouTube</a>}
-      {m.spotify_url&&<a className="secondaryButton linkButton" href={m.spotify_url} target="_blank" rel="noopener noreferrer"><icon name="music" inline/> Spotify</a>}
+      {m.youtube_url&&<a className="secondaryButton linkButton" href={m.youtube_url} target="_blank" rel="noopener noreferrer"> ▶ YouTube</a>}
+      {m.spotify_url&&<a className="secondaryButton linkButton" href={m.spotify_url} target="_blank" rel="noopener noreferrer">♫ Spotify</a>}
       {!m.youtube_url&&!m.spotify_url&&<span className="muted small">Enlaces de escucha pendientes</span>}
       {manager&&<button type="button" className="secondaryButton" onClick={()=>edit(m)}>Editar</button>}
      </div>
