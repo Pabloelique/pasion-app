@@ -80,7 +80,7 @@ export default function BandCalendar({role}:{role:string}){
  }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">▦</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Calendario</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Calendario</h1></div></header>
   <p className="muted">Ensayos, actuaciones y reuniones de la agrupación. Puedes navegar por cualquier mes y responder a los eventos.</p>
   {manager&&<div className="attendanceActions"><button className="primaryButton" type="button" onClick={()=>{setCreating(!creating);setError("");}}>+ Crear evento</button><Link href="/panel/asistencia" className="secondaryButton linkButton">Pasar lista →</Link></div>}
   {creating&&<section className="calendarForm"><h2>Nuevo evento</h2><form className="scoreForm" onSubmit={e=>void create(e)}>
