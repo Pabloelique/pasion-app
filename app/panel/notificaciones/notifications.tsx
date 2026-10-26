@@ -45,7 +45,7 @@ export default function Notifications({userId}:{userId:string}){
  }
  return <main className="container">
   <Link className="backLink" href="/panel">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">♧</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Notificaciones</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Notificaciones</h1></div></header>
   <p className="muted">Avisos internos para tu cuenta: ensayos, actuaciones, comunicados importantes y nuevas votaciones. Puedes consultarlos al entrar en PASIÓN APP.</p>
   <section className="notificationPanel">
    <div className="notificationToolbar">
