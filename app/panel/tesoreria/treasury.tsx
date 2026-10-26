@@ -26,8 +26,6 @@ export default function Treasury({userId}:{userId:string}){
  const [amount,setAmount]=useState("");
  const [method,setMethod]=useState("transferencia");
  const [reference,setReference]=useState("");
- const [isTest,setIsTest]=useState(true);
- const [includeTest,setIncludeTest]=useState(false);
  const [filterKind,setFilterKind]=useState("todos");
  const [filterCategory,setFilterCategory]=useState("todos");
  const [filterYear,setFilterYear]=useState("todos");
@@ -41,7 +39,7 @@ export default function Treasury({userId}:{userId:string}){
  }
  useEffect(()=>{void reload();},[]);
  const years=useMemo(()=>[...new Set(rows.map(r=>r.movement_date.slice(0,4)))].sort().reverse(),[rows]);
- const visible=useMemo(()=>rows.filter(r=>(includeTest||!r.is_test)&&(filterKind==="todos"||r.kind===filterKind)&&(filterCategory==="todos"||r.category===filterCategory)&&(filterYear==="todos"||r.movement_date.startsWith(filterYear))),[rows,includeTest,filterKind,filterCategory,filterYear]);
+ const visible=useMemo(()=>rows.filter(r=>!r.is_test&&(filterKind==="todos"||r.kind===filterKind)&&(filterCategory==="todos"||r.category===filterCategory)&&(filterYear==="todos"||r.movement_date.startsWith(filterYear))),[rows,filterKind,filterCategory,filterYear]);
  const amounts=useMemo(()=>visible.reduce((acc,r)=>{acc[r.kind]+=r.amount_cents;return acc;},{ingreso:0,gasto:0}),[visible]);
  const reversedIds=useMemo(()=>new Set(rows.map(r=>r.reversal_of).filter(Boolean)),[rows]);
  const add=async(e:React.FormEvent<HTMLFormElement>)=>{
@@ -49,9 +47,9 @@ export default function Treasury({userId}:{userId:string}){
   if(cents===null){setError("Introduce un importe positivo válido con máximo dos decimales.");return;}
   if(description.trim().length<3){setError("La descripción debe tener al menos 3 caracteres.");return;}
   if(!date){setError("Selecciona una fecha.");return;}
-  if(!window.confirm("¿Registrar "+money(cents)+" como "+kind+(isTest?" (PRUEBA)":" (REAL)")+"? El registro no se puede editar: solo anular con otro asiento."))return;
+  if(!window.confirm("¿Registrar "+money(cents)+" como "+kind+"? El registro no se puede editar: solo anular con otro asiento."))return;
   setBusy(true);setError("");setSuccess("");
-  const {error:err}=await db.from("treasury_movements").insert({movement_date:date,kind,category,description:description.trim(),amount_cents:cents,payment_method:method,reference:reference.trim(),is_test:isTest,created_by:userId});
+  const {error:err}=await db.from("treasury_movements").insert({movement_date:date,kind,category,description:description.trim(),amount_cents:cents,payment_method:method,reference:reference.trim(),is_test:false,created_by:userId});
   setBusy(false);
   if(err){setError(err.message);return;}
   setAmount("");setDescription("");setReference("");setSuccess("Movimiento registrado correctamente.");await reload();
@@ -68,10 +66,10 @@ export default function Treasury({userId}:{userId:string}){
   setSuccess("Movimiento anulado mediante contrapartida.");await reload();
  }
  function exportCsv(){
-  const headers=["Fecha","Tipo","Categoría","Concepto","Importe EUR","Método","Referencia","Prueba","Creado por","ID","Anula a"];
+  const headers=["Fecha","Tipo","Categoría","Concepto","Importe EUR","Método","Referencia","Creado por","ID","Anula a"];
   const val=(s:string)=>'"'+s.replaceAll('"','""')+'"';
   const lines=[headers.join(";"),...visible.map(m=>[
-   m.movement_date,m.kind,categories[m.category]??m.category,m.description,(m.amount_cents/100).toFixed(2).replace(".",","),methods[m.payment_method]??m.payment_method,m.reference,m.is_test?"Sí":"No",m.created_by,m.id,m.reversal_of??""
+   m.movement_date,m.kind,categories[m.category]??m.category,m.description,(m.amount_cents/100).toFixed(2).replace(".",","),methods[m.payment_method]??m.payment_method,m.reference,m.created_by,m.id,m.reversal_of??""
   ].map(v=>val(String(v))).join(";"))];
   const csv="\uFEFF"+lines.join("\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
@@ -90,7 +88,6 @@ export default function Treasury({userId}:{userId:string}){
     <label>Concepto<input required minLength={3} maxLength={300} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Ej. Actuación Domingo de Ramos"/></label>
     <label>Método<select value={method} onChange={e=>setMethod(e.target.value)}>{Object.entries(methods).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
     <label>Referencia (opcional)<input maxLength={120} value={reference} onChange={e=>setReference(e.target.value)} placeholder="Referencia bancaria o justificante"/></label>
-    <label className="treasuryCheckbox"><input type="checkbox" checked={isTest} onChange={e=>setIsTest(e.target.checked)}/> Movimiento de prueba (se excluirá de saldos reales)</label>
     <button disabled={busy} type="submit" className="primaryButton">{busy?"Registrando…":"Guardar movimiento"}</button>
    </form>
   </section>
@@ -102,14 +99,13 @@ export default function Treasury({userId}:{userId:string}){
     <label>Categoría<select value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}><option value="todos">Todas</option>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
     <label>Año<select value={filterYear} onChange={e=>setFilterYear(e.target.value)}><option value="todos">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
    </div>
-   <label className="treasuryCheckbox"><input type="checkbox" checked={includeTest} onChange={e=>setIncludeTest(e.target.checked)}/> Incluir movimientos de prueba</label>
    <div className="treasuryStats"><div><span>Ingresos</span><strong>{money(amounts.ingreso)}</strong></div><div><span>Gastos</span><strong>{money(amounts.gasto)}</strong></div><div><span>Saldo</span><strong>{money(amounts.ingreso-amounts.gasto)}</strong></div></div>
    <div className="treasuryHeading"><h3>Movimientos ({visible.length})</h3><button className="secondaryButton" type="button" onClick={exportCsv} disabled={loading||visible.length===0}>Exportar CSV</button></div>
    {error&&<p role="alert" className="formError">{error}</p>}
    {success&&<p role="status" className="formSuccess">{success}</p>}
    {loading?<p className="muted">Cargando movimientos…</p>:visible.length===0?<p className="muted">No hay movimientos para estos filtros.</p>:<div className="treasuryList">
     {visible.map(m=><article className="treasuryEntry" key={m.id}>
-     <div><strong>{m.description}</strong><p className="muted small">{m.movement_date} · {categories[m.category]??m.category} · {methods[m.payment_method]??m.payment_method}{m.is_test?" · PRUEBA":""}</p>
+     <div><strong>{m.description}</strong><p className="muted small">{m.movement_date} · {categories[m.category]??m.category} · {methods[m.payment_method]??m.payment_method}</p>
       {m.reference&&<p className="muted small">Referencia: {m.reference}</p>}
       {m.reversal_of&&<p className="muted small">Anulación de un movimiento anterior</p>}
      </div>
