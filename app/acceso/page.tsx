@@ -71,7 +71,7 @@ export default function AccessPage() {
   return <main className="authShell">
     <Link className="backLink" href="/">← Volver al inicio</Link>
     <section className="authCard">
-      <div className="authHeading"><span className="brandIcon">♫</span><div><span className="eyebrow">LA PASIÓN DE MAZARRÓN</span><h1>PASIÓN APP</h1></div></div>
+      <div className="authHeading"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><span className="eyebrow">LA PASIÓN DE MAZARRÓN</span><h1>PASIÓN APP</h1></div></div>
       <h2>{mode === "login" ? "Bienvenido de nuevo" : "Solicitar acceso"}</h2>
       <p className="muted">{mode === "login" ? "Entra con tu correo y contraseña." : "Tu cuenta quedará pendiente hasta que la apruebe la agrupación."}</p>
       <div className="switcher"><button type="button" className={mode === "login" ? "selected" : ""} onClick={() => {setMode("login");setError("");setMessage("");}}>Iniciar sesión</button><button type="button" className={mode === "register" ? "selected" : ""} onClick={() => {setMode("register");setError("");setMessage("");}}>Registrarse</button></div>
