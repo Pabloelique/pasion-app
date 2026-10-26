@@ -55,7 +55,7 @@ export default function Inventory({userId}:{userId:string}){
  }
  return <main className="container">
    <Link href="/panel" className="backLink">← Volver al panel</Link>
-   <header className="header"><span className="brandIcon">♬</span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Inventario</h1></div></header>
+   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Inventario</h1></div></header>
    <p className="muted">Control privado de instrumentos, uniformes y material. Registra asignaciones y próximas revisiones.</p>
    <div className="inventoryStats"><div><strong>{assets.length}</strong><span>Artículos registrados</span></div><div><strong>{assets.filter(a=>a.assigned_to).length}</strong><span>Asignados</span></div><div><strong>{maintenance}</strong><span>Revisiones pendientes</span></div></div>
    <section className="inventoryCard"><h2>{editing?"Editar artículo":"Añadir material"}</h2>
