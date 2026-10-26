@@ -9,7 +9,7 @@ const sections = [
 ];
 export default function Home() {
   return <main className="container">
-    <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL</small><h1>La Pasión de Mazarrón</h1></div></header>
+    <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL</small><h1>La Pasión de Mazarrón</h1></div></header>
     <section className="hero"><span className="eyebrow">PASIÓN APP · EN DESARROLLO</span><h2>Tu agrupación, siempre contigo.</h2><p>Estamos construyendo la aplicación para organizar ensayos, partituras, comunicaciones y actividades desde cualquier dispositivo.</p></section>
     <Link href="/acceso" className="primaryButton linkButton homeAccess">Entrar o solicitar registro →</Link><h3>Áreas de la plataforma</h3>
     <section className="grid">{sections.map(s=><article className="tile" key={s.title}><span className="tileIcon">{s.icon}</span><strong>{s.title}</strong><p>{s.detail}</p></article>)}</section>
