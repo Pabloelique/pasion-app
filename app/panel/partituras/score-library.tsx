@@ -21,14 +21,6 @@ function marchName(title:string,parts:Part[]){
 function folderKey(name:string){
  return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g," ").trim();
 }
-const extensions:Record<string,string>");
-  const pattern=new RegExp("(?:\\\\s*[-–—_|:]\\\\s*|\\\\s*\\\\(\\\\s*)"+safe+"(?:\\\\s*\\\\))?\\\\s*$","i");
-  const next=result.replace(pattern,"").trim();
-  if(next&&next!==result){result=next;break;}
- }
- return result||title.trim();
-}
-function folderKey(name:string){return name.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g," ").trim();}
 const extensions:Record<string,string>={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","audio/mpeg":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/mp4":"m4a","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx"};
 export default function ScoreLibrary({role,partId}:{role:string;partId:number|null}){
  const db=getSupabaseBrowser();
