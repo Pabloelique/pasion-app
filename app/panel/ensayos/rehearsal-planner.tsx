@@ -71,7 +71,7 @@ export default function RehearsalPlanner({role,userId}:{role:string;userId:strin
  }
  return <main className="container">
   <Link className="backLink" href="/panel">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Ensayos y repertorio</h1></div></header>
+  <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Ensayos y repertorio</h1></div></header>
   <p className="muted">Prepara el repertorio de cada ensayo y consulta el progreso de las marchas. Los archivos siguen protegidos en la biblioteca de partituras.</p>
   <section className="rehearsalCard">
    <div className="rehearsalHead"><h2>Seleccionar ensayo</h2><Link href="/panel/calendario" className="secondaryButton linkButton">Calendario</Link></div>
