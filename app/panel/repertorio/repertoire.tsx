@@ -27,6 +27,8 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
  const [marches,setMarches]=useState<March[]>([]);
  const [proposals,setProposals]=useState<Proposal[]>([]);
  const [suggestions,setSuggestions]=useState<string[]>([]);
+ const [showCandidates,setShowCandidates]=useState(false);
+ const [selectedCandidates,setSelectedCandidates]=useState<string[]>([]);
  const [form,setForm]=useState<Form>({...blank});
  const [editing,setEditing]=useState<string|null>(null);
  const [source,setSource]=useState<string>("");
@@ -55,7 +57,18 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
  }
  useEffect(()=>{void reload();},[]);
  const selected=useMemo(()=>marches.filter(m=>(m.title+" "+m.composer+" "+m.notes).toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es"))),[marches,query]);
+ const candidates=suggestions.filter(n=>!marches.some(m=>canonical(m.title)===canonical(n)));
  const pending=proposals.filter(p=>(p.closed_at!==null||new Date(p.closes_at).getTime()<=Date.now())&&!marches.some(m=>m.from_proposal===p.id)&&!marches.some(m=>canonical(m.title)===canonical(p.title)));
+ async function importSelected(){
+  if(!manager||busy||!selectedCandidates.length)return;
+  if(!window.confirm("¿Confirmas que estas "+selectedCandidates.length+" marchas de la biblioteca forman parte del repertorio OFICIAL? Se añadirán sin enlaces, para completarlos después."))return;
+  setBusy(true);setError("");setSuccess("");
+  const entries=selectedCandidates.map(title=>({title,created_by:userId}));
+  const {error:e}=await db.from("band_repertoire").insert(entries);
+  setBusy(false);
+  if(e){setError(e.message);return;}
+  setSelectedCandidates([]);setShowCandidates(false);setSuccess(entries.length+" marchas incorporadas. Puedes editar sus enlaces de YouTube y Spotify.");await reload();
+ }
  function reset(){setForm({...blank});setEditing(null);setSource("");}
  function edit(m:March){setForm({title:m.title,composer:m.composer,youtube_url:m.youtube_url,spotify_url:m.spotify_url,notes:m.notes});setEditing(m.id);setSource(m.from_proposal??"");setError("");setSuccess("");window.scrollTo({top:0,behavior:"smooth"});}
  function chooseProposal(id:string){
@@ -86,6 +99,14 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
     <h2>{editing?"Editar marcha":"Incorporar marcha"}</h2>
     <p className="muted small">Puedes elegir una marcha ya presente en las partituras, añadir una nueva o incorporar una propuesta con su votación finalizada. La inclusión es una decisión de la directiva, no automática.</p>
     {!editing&&<label className="repertoireLabel">Propuesta de votación finalizada<select value={source} onChange={e=>chooseProposal(e.target.value)}><option value="">Ninguna · añadir directamente</option>{pending.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
+    {!editing&&candidates.length>0&&<div className="repertoireCandidates">
+     <button type="button" className="secondaryButton" onClick={()=>setShowCandidates(v=>!v)}>Revisar {candidates.length} marchas de la biblioteca</button>
+     {showCandidates&&<div className="repertoireCandidateList">
+      <p className="muted small">Selecciona solo las marchas que realmente formen parte del repertorio. No se añadirá ninguna sin tu confirmación.</p>
+      <div className="repertoireCandidatesScroll">{candidates.map(n=><label key={n}><input type="checkbox" checked={selectedCandidates.includes(n)} onChange={e=>setSelectedCandidates(v=>e.target.checked?[...v,n]:v.filter(x=>x!==n))}/>{n}</label>)}</div>
+      <button type="button" disabled={busy||!selectedCandidates.length} className="primaryButton" onClick={()=>void importSelected()}>Incorporar {selectedCandidates.length} seleccionadas</button>
+     </div>}
+    </div>}
     <form className="repertoireForm" onSubmit={e=>void save(e)}>
      <label className="repertoireLabel">Título de la marcha<input list="repertoire-titles" value={form.title} onChange={e=>patch("title",e.target.value)} required minLength={3} maxLength={160} placeholder="Nombre de la marcha"/><datalist id="repertoire-titles">{suggestions.map(n=><option key={n} value={n}/>)}</datalist></label>
      <label className="repertoireLabel">Compositor o autor<input value={form.composer} maxLength={160} onChange={e=>patch("composer",e.target.value)} placeholder="Opcional"/></label>
