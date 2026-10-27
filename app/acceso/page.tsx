@@ -88,6 +88,7 @@ export default function AccessPage() {
         {message && <p role="status" className="formSuccess">{message}</p>}
         <button className="primaryButton" type="submit" disabled={loading}>{loading ? "Procesando…" : mode === "login" ? "Entrar en PASIÓN APP" : "Solicitar registro"}</button>
       </form>
+      {mode === "login" && <p className="authRecoveryLink"><Link href="/recuperar-contrasena">¿Has olvidado tu contraseña?</Link></p>}
       <p className="muted helpText">El registro no concede permisos automáticamente. Los accesos se aprueban individualmente.</p>
     </section>
   </main>;
