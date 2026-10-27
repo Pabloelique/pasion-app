@@ -1,23 +1,31 @@
 # 🎺 PASIÓN APP
 
-PWA **mobile-first** para la gestión de la Agrupación Musical La Pasión de Mazarrón.
+**Estado del proyecto: TERMINADO ✅**
 
-> 🚧 En desarrollo: actualmente se está preparando la base técnica. Las funcionalidades descritas son el plan de implementación, no funciones ya operativas.
+Aplicación web privada de gestión para la **Agrupación Musical La Pasión de Mazarrón**, desarrollada con un enfoque adaptable a móviles y escritorio.
 
-## Stack
+🌐 **Sitio web:** https://pasion-app.vercel.app/
 
-- Next.js + React + TypeScript
-- Supabase (Auth, PostgreSQL y almacenamiento privado)
-- Vercel (despliegue previsto)
+> Proyecto de desarrollo completado. El uso de algunas funciones depende de la configuración del servicio de correo y de que las migraciones SQL correspondientes estén aplicadas en la base de datos de Supabase.
 
-## Funcionalidades previstas
+## Tecnologías
 
-- Registro, aprobación de altas y roles (músico, directiva y superadmin único).
-- Partituras privadas: músicos ven su hilo; directiva ve todos.
-- Calendario navegable por meses y años y convocatoria de ensayos.
-- Control presencial de asistencia, justificación de faltas y advertencias revisadas por directiva.
-- Anuncios tipo chat, notificaciones, encuestas para elegir marchas y reparto orientativo de aportaciones voluntarias.
-- Tesorería, perfiles con foto y redes sociales.
+- Next.js, React y TypeScript.
+- Supabase: autenticación, PostgreSQL, políticas de acceso (RLS) y almacenamiento privado.
+- Vercel: despliegue web desde GitHub.
+
+## Funcionalidades implementadas
+
+- Registro de músicos con confirmación del correo y aprobación por la directiva.
+- Inicio de sesión y recuperación de contraseñas.
+- Roles y permisos diferenciados: músico, directiva y superadmin.
+- Biblioteca de partituras privadas por hilo musical, con modo atril.
+- Calendario, ensayos, repertorio y planificación de marchas.
+- Convocatorias de ensayo para toda la agrupación o para uno o varios hilos musicales.
+- Gestión de asistencia y justificación de ausencias.
+- Cancelación, reactivación y eliminación de ensayos.
+- Comunicados, notificaciones y votaciones.
+- Gestión de miembros, inventario, actuaciones y tesorería.
 
 ## Desarrollo local
 
@@ -27,8 +35,23 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Configura las variables públicas de Supabase en `.env.local` cuando se conecte el servicio. Nunca subas credenciales al repositorio.
+Configura las variables de entorno necesarias de Supabase en `.env.local`. **No publiques claves privadas ni credenciales** en GitHub.
 
-## Estado
+## Configuración de la base de datos
 
-Repositorio público para portfolio. Se integrarán los módulos de forma incremental y se documentará su progreso. Sin datos personales reales ni partituras protegidas en el código.
+La aplicación usa migraciones SQL ubicadas en `supabase/migrations/`. Deben aplicarse en el orden indicado por sus dependencias.
+
+En particular, las funciones recientes de convocatorias por instrumento, cancelación y borrado de ensayos requieren estas migraciones:
+
+1. `20261027_rehearsal_part_groups.sql`
+2. `20261027_cancel_delete_rehearsals.sql`
+
+**Importante:** que las migraciones estén incluidas en GitHub no significa que se hayan ejecutado ya en el proyecto de Supabase. Verifica su aplicación antes de usar estas funciones en producción.
+
+## Seguridad
+
+El acceso está restringido a miembros autorizados. El código fuente no debe incluir datos personales de músicos, contraseñas, claves del servicio de correo ni partituras privadas.
+
+---
+
+**Proyecto finalizado · Agrupación Musical La Pasión de Mazarrón · 2026**
