@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
-  const response = NextResponse.redirect(new URL("/panel", request.url));
+  const next = new URL(request.url).searchParams.get("next");
+  const destination = next === "/restablecer-contrasena" ? next : "/panel";
+  const response = NextResponse.redirect(new URL(destination, request.url));
   const code = new URL(request.url).searchParams.get("code");
   if (!code) return NextResponse.redirect(new URL("/acceso", request.url));
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
