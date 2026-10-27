@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
-type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string};
+type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string;cancelled_at:string|null};
 type Response={event_id:string;response:string;justification:string|null};
 type Part={id:number;name:string};
 type Target={event_id:string;part_id:number};
@@ -42,7 +42,7 @@ export default function BandCalendar({role}:{role:string}){
   const start=new Date(month.getFullYear(),month.getMonth(),1);
   const end=new Date(month.getFullYear(),month.getMonth()+1,1);
   const [e,a,t]=await Promise.all([
-   db.from("band_events").select("id,title,event_type,description,location,starts_at,ends_at").gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at"),
+   db.from("band_events").select("id,title,event_type,description,location,starts_at,ends_at,cancelled_at").gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at"),
    db.from("event_responses").select("event_id,response,justification"),
    db.from("event_target_parts").select("event_id,part_id")
   ]);
@@ -75,8 +75,20 @@ export default function BandCalendar({role}:{role:string}){
   setMessage("Evento creado correctamente.");
   setMonth(new Date(from.getFullYear(),from.getMonth(),1));await reload();
  }
+ async function manageRehearsal(action:"cancel"|"restore"|"delete"){
+  if(!manager||!selected||selected.event_type!=="ensayo"||busy)return;
+  const label=action==="cancel"?"cancelar":action==="restore"?"reactivar":"eliminar definitivamente";
+  if(!window.confirm("¿Quieres "+label+" el ensayo «"+selected.title+"»?"+(action==="delete"?" Se perderán sus respuestas, plan de trabajo y registros de asistencia. Esta acción no se puede deshacer.":"")))return;
+  setBusy(true);setError("");setMessage("");
+  const {error:err}=await db.rpc("manage_rehearsal",{p_event_id:selected.id,p_action:action});
+  setBusy(false);
+  if(err){setError(err.message);return;}
+  setSelected(null);
+  await reload();
+  setMessage(action==="cancel"?"Ensayo cancelado. Se ha avisado a los convocados.":action==="restore"?"Ensayo reactivado. Se ha avisado a los convocados.":"Ensayo eliminado definitivamente.");
+ }
  async function respond(){
-  if(!selected||!reply)return;
+  if(!selected||!reply||selected.cancelled_at)return;
   if(reply==="no_asistire"&&reason.trim().length<5){setError("Escribe una justificación de al menos 5 caracteres.");return;}
   setBusy(true);setError("");setMessage("");
   const result=await db.from("event_responses").upsert({event_id:selected.id,response:reply,justification:reply==="no_asistire"?reason.trim():null,updated_at:new Date().toISOString()},{onConflict:"event_id,user_id"});
@@ -108,7 +120,7 @@ export default function BandCalendar({role}:{role:string}){
    if(!d)return <div key={"empty"+i} className="calendarEmpty"/>;
    const items=grouped.get(dateKey(d))??[];
    return <div key={dateKey(d)} className={"calendarDay "+(dateKey(d)===dateKey(new Date())?"calendarToday":"")}>
-    <span>{d.getDate()}</span><div className="calendarEvents">{items.map(item=><button type="button" key={item.id} title={item.title} onClick={()=>choose(item)} className={"calendarEvent calendar-"+item.event_type}>{item.title}</button>)}</div>
+    <span>{d.getDate()}</span><div className="calendarEvents">{items.map(item=><button type="button" key={item.id} title={item.title} onClick={()=>choose(item)} className={"calendarEvent calendar-"+item.event_type}>{item.cancelled_at?"CANCELADO · ":""}{item.title}</button>)}</div>
    </div>;
   })}</div>
   </section>
@@ -118,18 +130,20 @@ export default function BandCalendar({role}:{role:string}){
   {message&&<p className="formSuccess" role="status">{message}</p>}
   {selected&&<section className="calendarDetail">
    <div className="calendarDetailTop"><span className="eyebrow">{types[selected.event_type]}</span><button type="button" className="secondaryButton" onClick={()=>setSelected(null)}>Cerrar</button></div>
-   <h2>{selected.title}</h2>
+   <h2>{selected.cancelled_at?"CANCELADO · ":""}{selected.title}</h2>
+   {selected.cancelled_at&&<p className="formError">Este ensayo está cancelado. No hay que asistir y no contará como falta.</p>}
+   {manager&&selected.event_type==="ensayo"&&<div className="attendanceActions">{selected.cancelled_at?<button type="button" className="secondaryButton" disabled={busy} onClick={()=>void manageRehearsal("restore")}>Reactivar ensayo</button>:<button type="button" className="secondaryButton" disabled={busy} onClick={()=>void manageRehearsal("cancel")}>Cancelar ensayo</button>}<button type="button" className="rehearsalRemove" disabled={busy} onClick={()=>void manageRehearsal("delete")}>Eliminar ensayo</button></div>}
    <p><strong>Inicio:</strong> {fmt.format(new Date(selected.starts_at))} a las {tm.format(new Date(selected.starts_at))}</p>
    <p><strong>Final:</strong> {fmt.format(new Date(selected.ends_at))} a las {tm.format(new Date(selected.ends_at))}</p>
    {selected.location&&<p><strong>Lugar:</strong> {selected.location}</p>}
    {selected.description&&<p>{selected.description}</p>}
    {selected.event_type==="ensayo"&&<p className="muted small"><strong>Convocados:</strong> {targets.filter(t=>t.event_id===selected.id).length===0?"Toda la banda":targets.filter(t=>t.event_id===selected.id).map(t=>parts.find(p=>p.id===t.part_id)?.name).filter(Boolean).join(", ")||"Tu hilo musical"}</p>}
-   <h3>Mi asistencia</h3><p className="muted">{selectedAnswer?"Respuesta registrada: "+(selectedAnswer.response==="asistire"?"Asistiré":"No asistiré"):"Todavía no has respondido."}</p>
+   {!selected.cancelled_at&&<><h3>Mi asistencia</h3><p className="muted">{selectedAnswer?"Respuesta registrada: "+(selectedAnswer.response==="asistire"?"Asistiré":"No asistiré"):"Todavía no has respondido."}</p>
    <div className="calendarChoices"><label><input type="radio" name="response" checked={reply==="asistire"} onChange={()=>setReply("asistire")}/> Asistiré</label>
    <label><input type="radio" name="response" checked={reply==="no_asistire"} onChange={()=>setReply("no_asistire")}/> No asistiré</label></div>
    {reply==="no_asistire"&&<label className="calendarReason">Justificación de ausencia<textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} minLength={5} placeholder="Explica el motivo de tu ausencia"/></label>}
-   <button type="button" className="primaryButton" disabled={busy||!reply} onClick={()=>void respond()}>{busy?"Guardando…":"Guardar mi respuesta"}</button>
+   <button type="button" className="primaryButton" disabled={busy||!reply} onClick={()=>void respond()}>{busy?"Guardando…":"Guardar mi respuesta"}</button></>}
   </section>}
-  <section className="calendarAgenda"><h2>Próximos eventos del mes</h2>{events.map(e=><button key={e.id} type="button" onClick={()=>choose(e)} className="calendarAgendaItem"><span>{fmt.format(new Date(e.starts_at))} · {tm.format(new Date(e.starts_at))}</span><strong>{e.title}</strong><small>{types[e.event_type]}{e.location?" · "+e.location:""}</small></button>)}</section>
+  <section className="calendarAgenda"><h2>Próximos eventos del mes</h2>{events.map(e=><button key={e.id} type="button" onClick={()=>choose(e)} className="calendarAgendaItem"><span>{fmt.format(new Date(e.starts_at))} · {tm.format(new Date(e.starts_at))}</span><strong>{e.cancelled_at?"CANCELADO · ":""}{e.title}</strong><small>{types[e.event_type]}{e.location?" · "+e.location:""}</small></button>)}</section>
  </main>;
 }
