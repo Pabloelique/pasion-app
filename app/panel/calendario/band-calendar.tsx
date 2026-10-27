@@ -4,6 +4,8 @@ import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string};
 type Response={event_id:string;response:string;justification:string|null};
+type Part={id:number;name:string};
+type Target={event_id:string;part_id:number};
 const types:{[key:string]:string}={ensayo:"Ensayo",actuacion:"Actuación",reunion:"Reunión",otro:"Otro"};
 const weekdays=["L","M","X","J","V","S","D"];
 const fmt=new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"long",year:"numeric"});
@@ -18,6 +20,9 @@ export default function BandCalendar({role}:{role:string}){
  const [month,setMonth]=useState(initialMonth);
  const [events,setEvents]=useState<Event[]>([]);
  const [answers,setAnswers]=useState<Response[]>([]);
+ const [parts,setParts]=useState<Part[]>([]);
+ const [targets,setTargets]=useState<Target[]>([]);
+ const [targetParts,setTargetParts]=useState<number[]>([]);
  const [selected,setSelected]=useState<Event|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -36,15 +41,18 @@ export default function BandCalendar({role}:{role:string}){
   setLoading(true);setError("");
   const start=new Date(month.getFullYear(),month.getMonth(),1);
   const end=new Date(month.getFullYear(),month.getMonth()+1,1);
-  const [e,a]=await Promise.all([
+  const [e,a,t]=await Promise.all([
    db.from("band_events").select("id,title,event_type,description,location,starts_at,ends_at").gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at"),
-   db.from("event_responses").select("event_id,response,justification")
+   db.from("event_responses").select("event_id,response,justification"),
+   db.from("event_target_parts").select("event_id,part_id")
   ]);
   if(e.error)setError(e.error.message);else setEvents((e.data??[]) as Event[]);
   if(a.error)setError(a.error.message);else setAnswers((a.data??[]) as Response[]);
+  if(t.error)setError(t.error.message);else setTargets((t.data??[]) as Target[]);
   setLoading(false);
  }
  useEffect(()=>{void reload();},[month]);
+ useEffect(()=>{if(manager){void db.from("musical_parts").select("id,name").order("name").then(({data})=>setParts((data??[]) as Part[]));}},[manager]);
  const days=useMemo(()=>{
   const first=new Date(month.getFullYear(),month.getMonth(),1);
   const offset=(first.getDay()+6)%7;
@@ -60,10 +68,10 @@ export default function BandCalendar({role}:{role:string}){
   const from=new Date(starts),to=new Date(ends);
   if(!starts||!ends||!Number.isFinite(from.getTime())||!Number.isFinite(to.getTime())||to<=from){setError("La fecha de finalización debe ser posterior al inicio.");return;}
   setBusy(true);
-  const result=await db.from("band_events").insert({title:title.trim(),event_type:kind,description:details.trim(),location:place.trim(),starts_at:from.toISOString(),ends_at:to.toISOString()});
+  const {error:rpcError}=await db.rpc("create_targeted_band_event",{p_title:title.trim(),p_event_type:kind,p_description:details.trim(),p_location:place.trim(),p_starts_at:from.toISOString(),p_ends_at:to.toISOString(),p_part_ids:kind==="ensayo"?targetParts:[]});
   setBusy(false);
-  if(result.error){setError(result.error.message);return;}
-  setCreating(false);setTitle("");setStarts("");setEnds("");setPlace("");setDetails("");
+  if(rpcError){setError(rpcError.message);return;}
+  setCreating(false);setTitle("");setStarts("");setEnds("");setPlace("");setDetails("");setTargetParts([]);
   setMessage("Evento creado correctamente.");
   setMonth(new Date(from.getFullYear(),from.getMonth(),1));await reload();
  }
@@ -86,6 +94,7 @@ export default function BandCalendar({role}:{role:string}){
   {creating&&<section className="calendarForm"><h2>Nuevo evento</h2><form className="scoreForm" onSubmit={e=>void create(e)}>
    <label>Título<input required minLength={3} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Ensayo general"/></label>
    <label>Tipo<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
+   {kind==="ensayo"&&<fieldset className="rehearsalTargets"><legend>¿A quién va dirigido este ensayo?</legend><p className="muted small">Sin seleccionar ningún hilo: ensayo general para toda la banda. Puedes seleccionar uno o varios hilos.</p><div className="rehearsalTargetChoices">{parts.map(p=><label key={p.id}><input type="checkbox" checked={targetParts.includes(p.id)} onChange={e=>setTargetParts(old=>e.target.checked?[...old,p.id]:old.filter(id=>id!==p.id))}/>{p.name}</label>)}</div><p className="muted small">{targetParts.length===0?"Convocatoria general para toda la banda":targetParts.length+" hilos seleccionados"}</p></fieldset>}
    <label>Inicio<input type="datetime-local" value={starts} required onChange={e=>setStarts(e.target.value)}/></label>
    <label>Final<input type="datetime-local" value={ends} required onChange={e=>setEnds(e.target.value)}/></label>
    <label>Lugar<input value={place} onChange={e=>setPlace(e.target.value)} maxLength={200} placeholder="Local de ensayo"/></label>
@@ -114,6 +123,7 @@ export default function BandCalendar({role}:{role:string}){
    <p><strong>Final:</strong> {fmt.format(new Date(selected.ends_at))} a las {tm.format(new Date(selected.ends_at))}</p>
    {selected.location&&<p><strong>Lugar:</strong> {selected.location}</p>}
    {selected.description&&<p>{selected.description}</p>}
+   {selected.event_type==="ensayo"&&<p className="muted small"><strong>Convocados:</strong> {targets.filter(t=>t.event_id===selected.id).length===0?"Toda la banda":targets.filter(t=>t.event_id===selected.id).map(t=>parts.find(p=>p.id===t.part_id)?.name).filter(Boolean).join(", ")||"Tu hilo musical"}</p>}
    <h3>Mi asistencia</h3><p className="muted">{selectedAnswer?"Respuesta registrada: "+(selectedAnswer.response==="asistire"?"Asistiré":"No asistiré"):"Todavía no has respondido."}</p>
    <div className="calendarChoices"><label><input type="radio" name="response" checked={reply==="asistire"} onChange={()=>setReply("asistire")}/> Asistiré</label>
    <label><input type="radio" name="response" checked={reply==="no_asistire"} onChange={()=>setReply("no_asistire")}/> No asistiré</label></div>
