@@ -25,6 +25,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
+ const [countsError,setCountsError]=useState("");
  const closed=(p:Proposal)=>Boolean(p.closed_at)||new Date(p.closes_at).getTime()<=Date.now();
  const refresh=async()=>{
   setLoading(true);setError("");
@@ -39,6 +40,21 @@ export default function Voting({role,userId}:{role:string;userId:string}){
   setLoading(false);
  };
  useEffect(()=>{void refresh();},[]);
+ useEffect(()=>{
+  let active=true;
+  async function updateCounts(){
+   if(document.visibilityState==="hidden")return;
+   const result=await db.rpc("march_vote_results");
+   if(!active)return;
+   if(result.error)setCountsError("No se pudo actualizar el recuento. Se muestran los últimos datos disponibles.");
+   else{setTotals((result.data??[]) as Total[]);setCountsError("");}
+   
+  }
+  const timer=setInterval(()=>void updateCounts(),30000);
+  window.addEventListener("focus",updateCounts);
+  return()=>{active=false;clearInterval(timer);window.removeEventListener("focus",updateCounts);};
+ },[]);
+
  useRecordAnchor("votacion-",proposals.map(p=>p.id).join(","));
  const byVote=useMemo(()=>new Map(votes.map(v=>[v.proposal_id,v.choice])),[votes]);
  const byTotal=useMemo(()=>new Map(totals.map(v=>[v.proposal_id,v])),[totals]);
@@ -84,7 +100,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Votación de nuevas marchas</h1></div></header>
-  <p className="muted">Vota qué marchas te gustaría incorporar. Cada miembro aprobado dispone de un voto por propuesta. Los resultados se muestran al cerrar la votación.</p>
+  <p className="muted">Vota qué marchas te gustaría incorporar. Cada miembro aprobado dispone de un voto por propuesta. Puedes consultar el recuento provisional mientras la votación está abierta.</p>
   <MultiMarchVoting manager={canManage} userId={userId}/>
   <hr style={{margin:"32px 0",opacity:0.2}}/>
   {canManage&&<section className="voteCard"><h2>Proponer una marcha (votación clásica Sí/No)</h2>
@@ -98,6 +114,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
   </section>}
   <div className="voteHeader"><h2>Votaciones clásicas de la agrupación</h2><button className="secondaryButton" type="button" onClick={()=>void refresh()} disabled={loading}>Actualizar</button></div>
   {error&&<p className="formError" role="alert">{error}</p>}
+  {countsError&&<p className="formError" role="status">{countsError}</p>}
   {success&&<p className="formSuccess" role="status">{success}</p>}
   {loading?<p className="muted">Cargando votaciones…</p>:sorted.length===0?<p className="muted">Todavía no hay ninguna marcha propuesta.</p>:<div className="voteList">
    {sorted.map(p=>{
@@ -111,8 +128,8 @@ export default function Voting({role,userId}:{role:string;userId:string}){
        <button type="button" className="primaryButton" disabled={busy} onClick={()=>void vote(p,"si")}>Sí, incorporarla</button>
        <button type="button" className="secondaryButton" disabled={busy} onClick={()=>void vote(p,"no")}>No incorporarla</button>
      </div>}
-     {done&&<div className="voteResult">
-      <h4>Resultado · {total} votos</h4>
+     {<div className="voteResult">
+      <h4>{done?"Resultado":"Recuento provisional"} · {total} votos</h4>
       <div className="voteResultLine"><span>Sí: {yes} ({total?Math.round(100*yes/total):0} %)</span><div><i style={{width:(total?100*yes/total:0)+"%"}}/></div></div>
       <div className="voteResultLine"><span>No: {no} ({total?Math.round(100*no/total):0} %)</span><div><i style={{width:(total?100*no/total:0)+"%"}}/></div></div>
      </div>}

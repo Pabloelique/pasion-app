@@ -27,6 +27,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
+ const [countsError,setCountsError]=useState("");
  const [now,setNow]=useState(Date.now());
  async function reload(){
   setLoading(true);setError("");
@@ -50,7 +51,22 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
   }
   setNow(Date.now());setLoading(false);
  }
- useEffect(()=>{void reload();const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>{void reload();},[]);
+ useEffect(()=>{
+  let active=true;
+  async function updateCounts(){
+   if(document.visibilityState==="hidden")return;
+   const result=await db.rpc("march_contest_results");
+   if(!active)return;
+   if(result.error)setCountsError("No se pudo actualizar el recuento. Se muestran los últimos datos disponibles.");
+   else{setResults((result.data??[]) as Result[]);setCountsError("");}
+   setNow(Date.now());
+  }
+  const timer=setInterval(()=>void updateCounts(),30000);
+  window.addEventListener("focus",updateCounts);
+  return()=>{active=false;clearInterval(timer);window.removeEventListener("focus",updateCounts);};
+ },[]);
+
  useRecordAnchor("votacion-",contests.map(c=>c.id).join(","));
  const getWinner=(id:string)=>{
   const ranked=results.filter(r=>r.contest_id===id).sort((a,b)=>Number(b.vote_count)-Number(a.vote_count));
@@ -73,7 +89,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
   setBusy(true);setError("");setSuccess("");
   const {error:err}=await db.from("march_contest_votes").insert({contest_id:contestId,option_id:optionId,user_id:userId});
   setBusy(false);if(err){setError(err.code==="23505"?"Ya has votado.":err.message);return;}
-  setSuccess("Voto registrado. Los resultados se verán al pasar las 24 horas.");await reload();
+  setSuccess("Voto registrado. Puedes ver el recuento provisional de cada marcha.");await reload();
  }
  async function publish(id:string){
   if(!manager||busy)return;
@@ -103,7 +119,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
  }
  return <section className="voteMultiSection">
   <h2>Votación entre varias marchas · 24 horas</h2>
-  <p className="muted">Cada músico elige una marcha. Al acabar las 24 horas se muestra la ganadora. La aportación económica <strong>solo se consulta cuando la directiva introduce el autor y el importe y pulsa Publicar</strong>.</p>
+  <p className="muted">Cada músico elige una marcha. Puedes ver cuántos votos lleva cada marcha. El recuento se actualiza cada 30 segundos mientras estás en esta pantalla; al acabar las 24 horas se confirma la ganadora. La aportación económica <strong>solo se consulta cuando la directiva introduce el autor y el importe y pulsa Publicar</strong>.</p>
   {manager&&<section className="voteCard"><h3>Crear nueva votación</h3><form className="voteForm" onSubmit={e=>void create(e)}>
    <label>Título de la votación<input value={title} minLength={3} maxLength={160} required onChange={e=>setTitle(e.target.value)} placeholder="Elegir próxima marcha"/></label>
    <fieldset className="marchContestChoices"><legend>Marchas candidatas</legend>
@@ -114,6 +130,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
    <button className="primaryButton" type="submit" disabled={busy}>{busy?"Publicando…":"Publicar votación de 24 horas"}</button>
   </form></section>}
   {error&&<p className="formError" role="alert">{error}</p>}
+  {countsError&&<p className="formError" role="status">{countsError}</p>}
   {success&&<p className="formSuccess" role="status">{success}</p>}
   {loading?<p className="muted">Cargando votaciones…</p>:contests.length===0?<p className="muted">No hay votaciones de varias marchas todavía.</p>:
   <div className="voteList">{contests.map(c=>{
@@ -129,11 +146,12 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
     <div className="voteTop"><span className="votePill">{c.published_at?"Aportaciones abiertas":closed?"24 horas finalizadas":"Votación abierta"}</span><span className="muted small">Cierra: {date.format(new Date(c.closes_at))}</span></div>
     <h3>{c.title}</h3>
     {!closed&&<p className="muted small">Quedan aproximadamente {Math.max(0,Math.ceil((new Date(c.closes_at).getTime()-now)/60000))} minutos.</p>}
+    <p className="muted"><strong>Total: {results.filter(r=>r.contest_id===c.id).reduce((sum,r)=>sum+Number(r.vote_count),0)} votos</strong>{!closed&&" · Recuento provisional"}</p>
     <div className="marchContestOptions">{opts.map(o=><div className="marchContestOption" key={o.id}>
-     <span><strong>{o.title}</strong>{closed&&<small> · {Number(results.find(r=>r.contest_id===c.id&&r.option_id===o.id)?.vote_count??0)} votos</small>}{myVote?.option_id===o.id&&<small> · Tu elección</small>}</span>
+     <span><strong>{o.title}</strong><strong className="votePill" style={{display:"inline-block",marginLeft:10}}> {Number(results.find(r=>r.contest_id===c.id&&r.option_id===o.id)?.vote_count??0)} votos</strong>{myVote?.option_id===o.id&&<small> · Tu elección</small>}</span>
      {!closed&&!myVote&&<button className="secondaryButton" disabled={busy} onClick={()=>void vote(c.id,o.id)}>Votar</button>}
     </div>)}</div>
-    {!closed&&myVote&&<p className="voteOwn">Voto registrado. Se publicará el resultado al terminar las 24 horas.</p>}
+    {!closed&&myVote&&<p className="voteOwn">Voto registrado. El ganador se confirma al terminar las 24 horas.</p>}
     {closed&&<p className="formSuccess">{winner?"Marcha ganadora: "+winner.title:win.reason}</p>}
     {closed&&winner&&!c.published_at&&<div className="marchContestPublish">
      {manager?<><h4>Completar y publicar consulta de aportación</h4><p className="muted small">Hasta que pulses Publicar, los músicos no podrán indicar si pagan por esta marcha.</p>
