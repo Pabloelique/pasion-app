@@ -3,7 +3,7 @@
   "short_name": "PASIÓN APP",
   "description": "Gestión de una agrupación musical",
   "start_url": "/panel",
-  "display": "browser",
+  "display": "standalone",
   "background_color": "#0d211a",
   "theme_color": "#143b2a",
   "lang": "es",
@@ -14,5 +14,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "scope": "/"
 }
