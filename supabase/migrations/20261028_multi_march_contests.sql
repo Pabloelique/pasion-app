@@ -173,3 +173,21 @@ end $$;
 revoke all on function public.delete_march_contest(uuid) from public,anon;
 grant execute on function public.delete_march_contest(uuid) to authenticated;
 notify pgrst,'reload schema';
+
+
+-- Eliminar también votaciones antiguas de Sí/No (con sus votos y avisos).
+create or replace function public.delete_legacy_march_proposal(p_proposal_id uuid)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not exists(select 1 from public.profiles p where p.id=auth.uid()
+ and p.approval_status='approved' and p.role in ('directiva','superadmin'))
+ then raise exception 'Acceso denegado' using errcode='42501'; end if;
+ if not exists(select 1 from public.march_proposals where id=p_proposal_id)
+ then raise exception 'Votación inexistente'; end if;
+ if exists(select 1 from public.band_repertoire where from_proposal=p_proposal_id)
+ then raise exception 'Esta propuesta está vinculada al repertorio oficial. Desvincúlala antes de eliminarla'; end if;
+ delete from public.app_notifications where source_id=p_proposal_id and kind='votacion';
+ delete from public.march_proposals where id=p_proposal_id;
+end $$;
+revoke all on function public.delete_legacy_march_proposal(uuid) from public,anon;
+grant execute on function public.delete_legacy_march_proposal(uuid) to authenticated;
