@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
+import {getSupabaseBrowser} from "@/lib/supabase/client";
 import LogoutButton from "../panel/salir";
 const sections=[
  ["inicio","Inicio"],["calendario","Calendario"],["partituras","Partituras"],["ensayos","Plan de ensayos"],["repertorio","Repertorio"],
@@ -24,21 +25,46 @@ export default function DemoApp({initialSeconds,preview}:{initialSeconds:number;
  const [section,setSection]=useState("inicio");
  const [message,setMessage]=useState("");
  const [busy,setBusy]=useState(false);
+ const [verifying,setVerifying]=useState(false);
  useEffect(()=>{
   if(preview)return;
-  let active=true;let deadline=performance.now()+initialSeconds*1000;
-  const tick=()=>{if(active)setRemaining(Math.max(0,Math.ceil((deadline-performance.now())/1000)));};
-  async function check(){
-   try{
-    const response=await fetch("/api/demo-access",{cache:"no-store"});
-    const access=await response.json();
-    if(!active)return;
-    deadline=performance.now()+(response.ok&&access.allowed?Number(access.remainingSeconds)||0:0)*1000;tick();
-   }catch{if(active){deadline=0;tick();setMessage("Conecta a Internet para verificar tu autorización.");}}
+  let active=true,leaving=false,checking=false,wasAllowed=initialSeconds>0;
+  let deadline=performance.now()+initialSeconds*1000;
+  function leave(){
+   if(!active||leaving)return;
+   leaving=true;setRemaining(0);setVerifying(true);
+   // Hide the demo before clearing credentials, even if sign-out is slow.
+   const redirect=()=>window.location.replace("/acceso");
+   const fallback=window.setTimeout(redirect,2000);
+   void getSupabaseBrowser().auth.signOut({scope:"local"}).finally(()=>{clearTimeout(fallback);redirect();});
   }
-  void check();const clock=setInterval(tick,1000),verify=setInterval(()=>void check(),15000);
-  window.addEventListener("focus",check);
-  return()=>{active=false;clearInterval(clock);clearInterval(verify);window.removeEventListener("focus",check);};
+  const tick=()=>{
+   if(!active||leaving)return;
+   const seconds=Math.max(0,Math.ceil((deadline-performance.now())/1000));
+   setRemaining(seconds);
+   if(wasAllowed&&seconds<=0)leave();
+  };
+  async function check(){
+   if(checking||leaving||!active||document.visibilityState==="hidden")return;
+   checking=true;
+   try{
+    const response=await fetch("/api/demo-access",{cache:"no-store",signal:AbortSignal.timeout(5000)});
+    const access=await response.json();
+    if(!active||leaving)return;
+    const seconds=response.ok&&access.allowed?Number(access.remainingSeconds)||0:0;
+    if(seconds<=0&&wasAllowed){leave();return;}
+    if(seconds>0)wasAllowed=true;
+    deadline=performance.now()+seconds*1000;tick();setVerifying(false);
+   }catch{
+    if(active){if(wasAllowed)leave();else{setVerifying(false);setMessage("Conecta a Internet para verificar tu autorización.");}}
+   }finally{checking=false;}
+  }
+  const resume=()=>{if(wasAllowed)setVerifying(true);void check();};
+  const visibility=()=>{if(document.visibilityState==="hidden"){if(wasAllowed)setVerifying(true);}else resume();};
+  void check();const clock=setInterval(tick,250),verify=setInterval(()=>void check(),1000);
+  window.addEventListener("focus",resume);document.addEventListener("visibilitychange",visibility);
+  window.addEventListener("pageshow",resume);
+  return()=>{active=false;clearInterval(clock);clearInterval(verify);window.removeEventListener("focus",resume);document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pageshow",resume);};
  },[initialSeconds,preview]);
  async function request(){
   setBusy(true);setMessage("");
@@ -46,6 +72,7 @@ export default function DemoApp({initialSeconds,preview}:{initialSeconds:number;
   catch{setMessage("No hay conexión. Inténtalo de nuevo.");}
   finally{setBusy(false);}
  }
+ if(!preview&&verifying)return <main className="authShell"><section className="authCard"><p role="status">Comprobando acceso…</p></section></main>;
  if(!preview&&remaining<=0)return <main className="authShell"><section className="authCard">
   <span className="eyebrow">VIEWER · ACCESO TEMPORAL</span><h1>Esperando autorización</h1>
   <p>El superadmin debe autorizar cada visita. Dispondrás de 15 minutos desde su aprobación para explorar ejemplos ficticios.</p>
