@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import MultiMarchVoting from "./multi-march-voting";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
 type Proposal={id:string;title:string;description:string;estimated_cost:number|null;closes_at:string;closed_at:string|null;created_at:string};
@@ -69,11 +70,22 @@ export default function Voting({role,userId}:{role:string;userId:string}){
   if(err){setError(err.message);return;}
   setSuccess("Votación cerrada.");await refresh();
  };
+ const removeLegacy=async(p:Proposal)=>{
+  if(!canManage||busy)return;
+  if(!window.confirm("¿Eliminar definitivamente la votación «"+p.title+"» y todos sus votos? No se puede deshacer."))return;
+  setBusy(true);setError("");setSuccess("");
+  const {error:err}=await db.rpc("delete_legacy_march_proposal",{p_proposal_id:p.id});
+  setBusy(false);
+  if(err){setError(err.message);return;}
+  setSuccess("Votación eliminada correctamente.");await refresh();
+ };
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Votaciones de marchas</h1></div></header>
   <p className="muted">Vota qué marchas te gustaría incorporar. Cada miembro aprobado dispone de un voto por propuesta. Los resultados se muestran al cerrar la votación.</p>
-  {canManage&&<section className="voteCard"><h2>Proponer una marcha</h2>
+  <MultiMarchVoting manager={canManage} userId={userId}/>
+  <hr style={{margin:"32px 0",opacity:0.2}}/>
+  {canManage&&<section className="voteCard"><h2>Proponer una marcha (votación clásica Sí/No)</h2>
    <form className="voteForm" onSubmit={e=>void create(e)}>
     <label>Nombre de la marcha<input minLength={3} maxLength={160} required value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Cinco Llagas"/></label>
     <label>Información adicional<textarea maxLength={3000} rows={3} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Autor, dificultad, motivo de la propuesta…"/></label>
@@ -82,7 +94,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
     <button className="primaryButton" disabled={busy} type="submit">{busy?"Guardando…":"Publicar propuesta"}</button>
    </form>
   </section>}
-  <div className="voteHeader"><h2>Propuestas de la agrupación</h2><button className="secondaryButton" type="button" onClick={()=>void refresh()} disabled={loading}>Actualizar</button></div>
+  <div className="voteHeader"><h2>Votaciones clásicas de la agrupación</h2><button className="secondaryButton" type="button" onClick={()=>void refresh()} disabled={loading}>Actualizar</button></div>
   {error&&<p className="formError" role="alert">{error}</p>}
   {success&&<p className="formSuccess" role="status">{success}</p>}
   {loading?<p className="muted">Cargando votaciones…</p>:sorted.length===0?<p className="muted">Todavía no hay ninguna marcha propuesta.</p>:<div className="voteList">
@@ -104,6 +116,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
      </div>}
      {canManage&&done&&<p className="muted small">¿Habéis decidido incorporarla? <Link href="/panel/repertorio">Gestionar repertorio oficial →</Link></p>}
      {canManage&&!done&&<button className="voteClose" type="button" disabled={busy} onClick={()=>void close(p)}>Cerrar votación ahora</button>}
+     {canManage&&<button className="voteClose" type="button" disabled={busy} onClick={()=>void removeLegacy(p)}>Eliminar votación</button>}
      {p.estimated_cost!==null&&<details className="voteContribution">
       <summary>Simular aportación voluntaria</summary>
       <label>Número de participantes<input type="number" min={1} max={10000} step={1} value={participants} onChange={e=>setParticipants(Number(e.target.value)||1)}/></label>
