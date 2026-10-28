@@ -60,7 +60,7 @@ export default function AccessPage() {
           },
         });
         if (signUpError) throw signUpError;
-        setMessage("Solicitud enviada. Revisa Gmail para confirmar tu correo. Después deberá aprobarte la directiva; si solicitas directiva, solo el superadmin podrá hacerlo.");
+        setMessage(requestedRole==="viewer"?"Solicitud viewer enviada. Confirma tu correo en Gmail e inicia sesión. El superadmin deberá autorizar cada visita de 15 minutos.":"Solicitud enviada. Revisa Gmail para confirmar tu correo. Después deberá aprobarte la directiva; si solicitas directiva, solo el superadmin podrá hacerlo.");
         setPassword("");
       }
     } catch (cause) {
