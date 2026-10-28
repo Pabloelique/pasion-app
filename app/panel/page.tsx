@@ -20,7 +20,7 @@ const shortcuts=[
  {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
- {href:"/panel/votaciones",icon:"◉",name:"Votaciones",detail:"Propuestas de nuevas marchas"},
+ {href:"/panel/votaciones",icon:"◉",name:"Votación de nuevas marchas",detail:"Propuestas de nuevas marchas"},
  {href:"/panel/notificaciones",icon:"♧",name:"Notificaciones",detail:"Avisos internos y novedades"}
 ];
 const management=[

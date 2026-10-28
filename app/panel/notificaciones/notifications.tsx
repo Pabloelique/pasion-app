@@ -3,7 +3,10 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {noticeLink,actionLabel,safeAppLink,detectAnnouncementLink,validId} from "@/lib/notice-links";
+import {useRecordAnchor} from "@/lib/use-record-anchor";
 import PushSettings from "./push-settings";
+type LinkedPost={id:string;content:string;link_path:string|null};
 type Notification={id:string;user_id:string;kind:string;source_id:string;title:string;message:string;destination:string;created_at:string;read_at:string|null};
 const label:Record<string,string>={ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
 const dateTime=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short",timeZone:"Europe/Madrid"});
@@ -11,6 +14,7 @@ export default function Notifications({userId}:{userId:string}){
  const db=getSupabaseBrowser();
  const router=useRouter();
  const [items,setItems]=useState<Notification[]>([]);
+ const [linkedPosts,setLinkedPosts]=useState<LinkedPost[]>([]);
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -21,10 +25,27 @@ export default function Notifications({userId}:{userId:string}){
   const {data,error:err}=await db.from("app_notifications")
    .select("id,user_id,kind,source_id,title,message,destination,created_at,read_at")
    .eq("user_id",userId).order("created_at",{ascending:false}).limit(250);
-  if(err)setError(err.message);else setItems((data??[]) as Notification[]);
+  if(err)setError(err.message);else{
+   const notices=(data??[]) as Notification[];
+   const linkedId=window.location.hash.startsWith("#aviso-")?window.location.hash.slice(7):"";
+   if(validId(linkedId)&&!notices.some(n=>n.id===linkedId)){
+    const linked=await db.from("app_notifications").select("id,user_id,kind,source_id,title,message,destination,created_at,read_at").eq("id",linkedId).eq("user_id",userId).maybeSingle();
+    if(linked.error)setError("No se pudo cargar el aviso enlazado.");
+    else if(linked.data)notices.unshift(linked.data as Notification);
+    else setError("El aviso enlazado ya no está disponible.");
+   }
+   setItems(notices);
+   const ids=notices.filter(n=>n.kind==="comunicado").map(n=>n.source_id);
+   if(ids.length){
+    const posts=await db.from("board_posts").select("id,content,link_path").in("id",ids);
+    if(posts.error)setError("No se pudo cargar el mensaje completo. Abre el comunicado para leerlo.");
+    setLinkedPosts((posts.data??[]) as LinkedPost[]);
+   }else setLinkedPosts([]);
+  }
   setLoading(false);
  }
  useEffect(()=>{void load();},[]);
+ useRecordAnchor("aviso-",items.map(n=>n.id).join(",")+"|"+linkedPosts.map(p=>p.id).join(","));
  const unread=items.filter(n=>!n.read_at);
  const shown=useMemo(()=>filter==="sin_leer"?items.filter(n=>!n.read_at):items,[filter,items]);
  async function mark(id:string,destination?:string){
@@ -64,17 +85,22 @@ export default function Notifications({userId}:{userId:string}){
    {error&&<p className="formError" role="alert">{error}</p>}
    {success&&<p className="formSuccess" role="status">{success}</p>}
    {loading?<p className="muted">Cargando avisos…</p>:shown.length===0?<p className="muted">No tienes notificaciones en esta categoría.</p>:
-    <div className="notificationList">{shown.map(item=><article key={item.id} className={item.read_at?"notificationItem":"notificationItem notificationUnread"}>
+    <div className="notificationList">{shown.map(item=>{
+     const post=linkedPosts.find(p=>p.id===item.source_id);
+     const target=safeAppLink(post?.link_path)??(post?detectAnnouncementLink(item.message+" "+post.content,[]):null)??noticeLink(item.kind,item.source_id,item.destination);
+     const cta=item.kind==="ensayo"?"VER ENSAYO":item.kind==="actuacion"?"VER ACTUACIÓN":item.kind==="votacion"&&item.title.toLowerCase().includes("aportación")?"RESPONDE AQUÍ":actionLabel(target);
+     return <article key={item.id} id={"aviso-"+item.id} tabIndex={-1} className={item.read_at?"notificationItem linkedRecord":"notificationItem notificationUnread linkedRecord"}>
       <div className="notificationInfo"><div className="notificationMeta">
        <span className="notificationKind">{label[item.kind]??"Aviso"}</span>
        {!item.read_at&&<span className="notificationDot" aria-label="Sin leer"/>}
        <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
-      </div><h3>{item.title}</h3>{item.message&&<p>{item.message}</p>}</div>
+      </div><h3>{item.title}</h3>{(post?.content||item.message)&&<p className="noticeMessage">{post?.content||item.message}</p>}
+       <button className="primaryButton noticeCta" type="button" disabled={busy} onClick={()=>{if(item.read_at)router.push(target);else void mark(item.id,target);}}>{cta}</button>
+      </div>
       <div className="notificationActions">
-       <button className="primaryButton" type="button" disabled={busy} onClick={()=>{if(item.read_at)router.push(item.destination);else void mark(item.id,item.destination);}}>Ver detalle</button>
        {!item.read_at&&<button type="button" className="secondaryButton" disabled={busy} onClick={()=>void mark(item.id)}>Marcar leída</button>}
       </div>
-     </article>)}</div>}
+     </article>;})}</div>}
    {items.length>=250&&<p className="muted small">Se muestran los 250 avisos más recientes.</p>}
   </section>
  </main>;

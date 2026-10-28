@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {validId} from "@/lib/notice-links";
+import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string;cancelled_at:string|null};
 type Response={event_id:string;response:string;justification:string|null};
 type Part={id:number;name:string};
@@ -53,6 +55,28 @@ export default function BandCalendar({role}:{role:string}){
  }
  useEffect(()=>{void reload();},[month]);
  useEffect(()=>{if(manager){void db.from("musical_parts").select("id,name").order("name").then(({data})=>setParts((data??[]) as Part[]));}},[manager]);
+ useEffect(()=>{
+  let active=true;
+  async function openLinkedEvent(){
+   const hash=window.location.hash;
+   if(!hash.startsWith("#evento-"))return;
+   const id=hash.slice(8);
+   if(!validId(id))return;
+   const {data,error:err}=await db.from("band_events").select("id,title,event_type,description,location,starts_at,ends_at,cancelled_at").eq("id",id).maybeSingle();
+   if(!active)return;
+   if(err||!data){setError("Este evento ya no está disponible o no estás convocado.");return;}
+   const event=data as Event;const start=new Date(event.starts_at);
+   setMonth(old=>old.getFullYear()===start.getFullYear()&&old.getMonth()===start.getMonth()?old:new Date(start.getFullYear(),start.getMonth(),1));
+   setSelected(event);
+  }
+  void openLinkedEvent();window.addEventListener("hashchange",openLinkedEvent);
+  return()=>{active=false;window.removeEventListener("hashchange",openLinkedEvent);};
+ },[]);
+ useRecordAnchor("evento-",selected?.id??"");
+ useEffect(()=>{
+  const response=answers.find(a=>a.event_id===selected?.id);
+  setReply(response?.response??"");setReason(response?.justification??"");
+ },[selected?.id,answers]);
  const days=useMemo(()=>{
   const first=new Date(month.getFullYear(),month.getMonth(),1);
   const offset=(first.getDay()+6)%7;
@@ -128,7 +152,7 @@ export default function BandCalendar({role}:{role:string}){
   {!loading&&events.length===0&&<p className="muted">No hay eventos programados en este mes.</p>}
   {error&&<p className="formError" role="alert">{error}</p>}
   {message&&<p className="formSuccess" role="status">{message}</p>}
-  {selected&&<section className="calendarDetail">
+  {selected&&<section className="calendarDetail linkedRecord" id={"evento-"+selected.id} tabIndex={-1}>
    <div className="calendarDetailTop"><span className="eyebrow">{types[selected.event_type]}</span><button type="button" className="secondaryButton" onClick={()=>setSelected(null)}>Cerrar</button></div>
    <h2>{selected.cancelled_at?"CANCELADO · ":""}{selected.title}</h2>
    {selected.cancelled_at&&<p className="formError">Este ensayo está cancelado. No hay que asistir y no contará como falta.</p>}

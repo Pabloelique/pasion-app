@@ -2,6 +2,7 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
+import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Contest={id:string;title:string;created_at:string;closes_at:string;winning_option_id:string|null;composer:string|null;estimated_cost:number|null;published_at:string|null};
 type Option={id:string;contest_id:string;title:string};
 type Vote={contest_id:string;option_id:string};
@@ -50,6 +51,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
   setNow(Date.now());setLoading(false);
  }
  useEffect(()=>{void reload();const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
+ useRecordAnchor("votacion-",contests.map(c=>c.id).join(","));
  const getWinner=(id:string)=>{
   const ranked=results.filter(r=>r.contest_id===id).sort((a,b)=>Number(b.vote_count)-Number(a.vote_count));
   if(!ranked.length||Number(ranked[0].vote_count)===0)return {id:null,reason:"Nadie votó."};
@@ -123,7 +125,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
    const winner=opts.find(o=>o.id===win.id);
    const counts=totals.find(t=>t.contest_id===c.id);
    const input=details[c.id]??{composer:"",cost:""};
-   return <article className="voteCard" key={c.id}>
+   return <article className="voteCard linkedRecord" key={c.id} id={"votacion-"+c.id} tabIndex={-1}>
     <div className="voteTop"><span className="votePill">{c.published_at?"Aportaciones abiertas":closed?"24 horas finalizadas":"Votación abierta"}</span><span className="muted small">Cierra: {date.format(new Date(c.closes_at))}</span></div>
     <h3>{c.title}</h3>
     {!closed&&<p className="muted small">Quedan aproximadamente {Math.max(0,Math.ceil((new Date(c.closes_at).getTime()-now)/60000))} minutos.</p>}

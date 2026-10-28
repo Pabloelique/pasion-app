@@ -57,7 +57,7 @@ export async function POST(request:NextRequest){
    await webpush.sendNotification(
     {endpoint:device.endpoint,keys:{p256dh:device.p256dh,auth:device.auth_key}},
     JSON.stringify({title:notice.title,body:notice.message||"Tienes una novedad en PASIÓN APP.",
-     url:["/panel/calendario","/panel/tablon","/panel/votaciones"].includes(notice.destination)?notice.destination:"/panel/notificaciones",
+     url:"/panel/notificaciones#aviso-"+notice.id,
      tag:"pasion-"+notice.id}),
     {TTL:86400,urgency:"normal",timeout:6500}
    );

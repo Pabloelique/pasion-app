@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import {useRecordAnchor} from "@/lib/use-record-anchor";
 import MultiMarchVoting from "./multi-march-voting";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
@@ -38,6 +39,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
   setLoading(false);
  };
  useEffect(()=>{void refresh();},[]);
+ useRecordAnchor("votacion-",proposals.map(p=>p.id).join(","));
  const byVote=useMemo(()=>new Map(votes.map(v=>[v.proposal_id,v.choice])),[votes]);
  const byTotal=useMemo(()=>new Map(totals.map(v=>[v.proposal_id,v])),[totals]);
  const sorted=useMemo(()=>[...proposals].sort((a,b)=>Number(closed(a))-Number(closed(b))||new Date(b.created_at).getTime()-new Date(a.created_at).getTime()),[proposals]);
@@ -81,7 +83,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
  };
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
-  <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Votaciones de marchas</h1></div></header>
+  <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Votación de nuevas marchas</h1></div></header>
   <p className="muted">Vota qué marchas te gustaría incorporar. Cada miembro aprobado dispone de un voto por propuesta. Los resultados se muestran al cerrar la votación.</p>
   <MultiMarchVoting manager={canManage} userId={userId}/>
   <hr style={{margin:"32px 0",opacity:0.2}}/>
@@ -101,7 +103,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
    {sorted.map(p=>{
     const done=closed(p),own=byVote.get(p.id),count=byTotal.get(p.id);
     const yes=Number(count?.yes_votes??0),no=Number(count?.no_votes??0),total=yes+no;
-    return <article className="voteCard" key={p.id}>
+    return <article className="voteCard linkedRecord" key={p.id} id={"votacion-"+p.id} tabIndex={-1}>
      <div className="voteTop"><span className="votePill">{done?"Cerrada":"Abierta"}</span><span className="muted small">Cierra: {fmt.format(new Date(p.closes_at))}</span></div>
      <h3>{p.title}</h3>{p.description&&<p className="voteDescription">{p.description}</p>}
      {p.estimated_cost!==null&&<p className="muted">Coste orientativo de adquisición: <strong>{money.format(p.estimated_cost)}</strong></p>}
