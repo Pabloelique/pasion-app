@@ -91,3 +91,6 @@ html{scroll-behavior:smooth}body{min-width:280px;overflow-x:hidden}button,input,
 html[data-theme="light"] .formError{color:#862e26}
 html[data-theme="light"] .formSuccess{color:#235b33}
 @media(max-width:390px){.themeBar{gap:8px}.themeChoices button{padding:8px 11px}}
+
+.demoNavigation{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
+.demoNavigation button{min-height:44px;padding:10px 13px;font-size:13px}

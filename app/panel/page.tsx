@@ -38,6 +38,7 @@ export default async function PanelPage(){
  if(error||!user)redirect("/acceso");
  const {data:profile}=await db.from("profiles").select("first_name,last_name,role,requested_role,approval_status,musical_part_id").eq("id",user.id).single();
  if(!profile)return <main className="authShell"><section className="authCard"><h1>Perfil no disponible</h1><p>Tu cuenta existe, pero no hemos podido cargar tu perfil. Contacta con la directiva.</p><LogoutButton/></section></main>;
+ if(profile.role==="viewer")redirect("/demo");
  if(profile.approval_status!=="approved")return <main className="authShell"><section className="authCard">
   <span className="eyebrow">SOLICITUD DE ACCESO</span>
   <h1>{profile.approval_status==="rejected"?"Solicitud no aprobada":"Pendiente de aprobación"}</h1>

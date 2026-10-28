@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {redirect} from "next/navigation";
 import {getSupabaseServer} from "@/lib/supabase/server";
 
 export default async function PanelLayout({children}:{children:React.ReactNode}){
@@ -6,7 +7,8 @@ export default async function PanelLayout({children}:{children:React.ReactNode})
  const {data:{user}}=await db.auth.getUser();
  let approved=false;
  if(user){
-  const {data:profile}=await db.from("profiles").select("approval_status").eq("id",user.id).single();
+  const {data:profile}=await db.from("profiles").select("role,approval_status").eq("id",user.id).single();
+  if(profile?.role==="viewer")redirect("/demo");
   approved=profile?.approval_status==="approved";
  }
  return <>

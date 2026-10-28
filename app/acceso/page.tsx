@@ -48,7 +48,7 @@ export default function AccessPage() {
         router.replace("/panel");
         router.refresh();
       } else {
-        if (!firstName.trim() || !lastName.trim() || !part) throw new Error("Completa el nombre, los apellidos y el hilo musical.");
+        if (!firstName.trim() || !lastName.trim() || (requestedRole!=="viewer"&&!part)) throw new Error("Completa el nombre, los apellidos y el hilo musical.");
         if (!/^[^\s@]+@gmail\.com$/i.test(email.trim())) throw new Error("Para este registro debes introducir una dirección de Gmail válida.");
         if (password.length < 12 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password))
           throw new Error("La contraseña necesita al menos 12 caracteres, letras y números.");
@@ -79,8 +79,8 @@ export default function AccessPage() {
         {mode === "register" && <>
           <label>Nombre<input autoComplete="given-name" maxLength={80} required value={firstName} onChange={e => setFirstName(e.target.value)} /></label>
           <label>Apellidos<input autoComplete="family-name" maxLength={100} required value={lastName} onChange={e => setLastName(e.target.value)} /></label>
-          <label>Hilo musical<select required value={part} onChange={e => setPart(e.target.value)}><option value="">Selecciona tu hilo</option>{parts.map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>
-          <label>Rol solicitado<select value={requestedRole} onChange={e => setRequestedRole(e.target.value)}><option value="musico">Músico</option><option value="directiva">Directiva (requiere aprobación del superadmin)</option></select></label>
+          {requestedRole!=="viewer"&&<label>Hilo musical<select required value={part} onChange={e => setPart(e.target.value)}><option value="">Selecciona tu hilo</option>{parts.map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
+          <label>Rol solicitado<select value={requestedRole} onChange={e => setRequestedRole(e.target.value)}><option value="viewer">Viewer · Demostración de 15 minutos (requiere autorización del superadmin)</option><option value="musico">Músico</option><option value="directiva">Directiva (requiere aprobación del superadmin)</option></select></label>
         </>}
         <label>Correo electrónico (Gmail)<input type="email" autoComplete="email" placeholder="ejemplo@gmail.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Contraseña<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "register" ? 12 : undefined} value={password} onChange={e => setPassword(e.target.value)} /></label>
