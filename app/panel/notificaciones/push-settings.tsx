@@ -96,5 +96,40 @@ export default function PushSettings({userId}:{userId:string}){
   {info&&<p className="muted" role="status">{info}</p>}
   {error&&<p className="formError" role="alert">{error}</p>}
   <p className="muted small">Cada móvil debe activar los avisos por separado. Si no los activas, seguirás viendo las novedades en la bandeja de PASIÓN APP.</p>
+  <div aria-labelledby="push-guide-title">
+   <h3 id="push-guide-title">Guía según tu móvil</h3>
+   <p className="muted">Si ya tienes PASIÓN APP en la pantalla de inicio, empieza abriendo ese icono. No borres el acceso: primero sigue los pasos de tu móvil.</p>
+   <details className="notice">
+    <summary>iPhone y iPad</summary>
+    <ol className="muted">
+     <li>Abre PASIÓN APP desde su icono en la pantalla de inicio e inicia sesión.</li>
+     <li>Entra en <strong>Notificaciones</strong> y pulsa <strong>Activar notificaciones push</strong>.</li>
+     <li>Cuando el móvil pregunte, pulsa <strong>Permitir</strong>. Debe aparecer el mensaje de notificaciones activadas.</li>
+    </ol>
+    <p className="muted">Necesitas iOS o iPadOS 16.4 o posterior. Si el icono abre una pestaña del navegador y no permite activar los avisos, puede ser un marcador: abre pasion-app.vercel.app en Safari, pulsa Compartir → Añadir a pantalla de inicio y abre el icono creado. Solo hace falta este paso si el acceso actual no funciona como aplicación web.</p>
+    <p className="muted">Si antes rechazaste el permiso, busca PASIÓN APP en Ajustes → Notificaciones y activa Permitir notificaciones. Vuelve después a esta pantalla.</p>
+   </details>
+   <details className="notice">
+    <summary>Android: Samsung, Xiaomi, Redmi, OPPO, realme, Motorola y otros</summary>
+    <ol className="muted">
+     <li>Abre el icono que ya tienes de PASIÓN APP e inicia sesión.</li>
+     <li>Entra en <strong>Notificaciones</strong>, pulsa <strong>Activar notificaciones push</strong> y acepta el permiso.</li>
+     <li>Comprueba que aparece el mensaje de notificaciones activadas en este dispositivo.</li>
+    </ol>
+    <p className="muted">Si tu navegador no admite los avisos, abre pasion-app.vercel.app en Chrome actualizado y repite los pasos. En Chrome no necesitas instalar otra aplicación para activar las notificaciones.</p>
+    <p className="muted">Si bloqueaste el permiso: abre la web en Chrome → información del sitio, junto a la dirección → Permisos → Notificaciones → Permitir. Comprueba también en los ajustes del móvil que las notificaciones de Chrome o PASIÓN APP estén permitidas. Los nombres de los menús pueden variar.</p>
+   </details>
+   <details className="notice">
+    <summary>Ya los he activado, pero no me llegan</summary>
+    <ul className="muted">
+     <li>Actívalos por separado en cada móvil o tablet que utilices, con tu cuenta aprobada.</li>
+     <li>Si no ves el botón o la guía actualizada, cierra y vuelve a abrir PASIÓN APP con conexión; si sigue igual, recarga la página.</li>
+     <li>Revisa los permisos del móvil y del navegador, el modo No molestar o Concentración y tu conexión a Internet. Usa una ventana normal, no privada.</li>
+     <li>Si el móvil restringe la actividad en segundo plano o usa ahorro de batería, revisa esas opciones para el navegador o PASIÓN APP.</li>
+     <li>Los avisos corresponden a las novedades que te afectan. Activarlos no vuelve a enviar los avisos antiguos; compruébalo con un aviso nuevo de directiva.</li>
+    </ul>
+    <p className="muted">Puedes pulsar Desactivar notificaciones en esta pantalla cuando quieras. Aunque no actives los avisos al móvil, las novedades seguirán en tu bandeja de entrada. La entrega puede retrasarse según la conexión y los ajustes del dispositivo.</p>
+   </details>
+  </div>
  </section>;
 }
