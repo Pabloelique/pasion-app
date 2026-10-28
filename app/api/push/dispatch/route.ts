@@ -11,7 +11,7 @@ function tokenMatches(actual:string|null,expected:string){
  const left=Buffer.from(actual),right=Buffer.from(expected);
  return left.length===right.length&&timingSafeEqual(left,right);
 }
-type Hook={type?:string;table?:string;schema?:string;record?:{id?:string}};
+type Hook={type?:string;table?:string;schema?:string;record?:{id?:string;title?:string;message?:string;created_at?:string};old_record?:{title?:string;message?:string;created_at?:string}};
 function uuid(value:unknown):value is string{
  return typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
@@ -29,8 +29,12 @@ export async function POST(request:NextRequest){
   return NextResponse.json({error:"Configuración push pendiente"},{status:503});
  let input:Hook;
  try{input=await request.json() as Hook;}catch{return NextResponse.json({error:"Solicitud incorrecta"},{status:400});}
- if(input.type!=="INSERT"||input.table!=="app_notifications"||input.schema!=="public"||!uuid(input.record?.id))
+ if(!["INSERT","UPDATE"].includes(input.type??"")||input.table!=="app_notifications"||input.schema!=="public"||!uuid(input.record?.id))
   return NextResponse.json({error:"Evento no válido"},{status:400});
+ // Evitar avisos duplicados al marcar una notificación como leída.
+ if(input.type==="UPDATE"&&(!input.old_record||
+  (input.record?.title===input.old_record.title&&input.record?.message===input.old_record.message&&input.record?.created_at===input.old_record.created_at)))
+  return NextResponse.json({sent:0,reason:"Actualización sin contenido nuevo"});
  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data:notice,error:noticeError}=await db.from("app_notifications")
   .select("id,user_id,title,message,destination").eq("id",input.record.id).maybeSingle();
@@ -47,6 +51,9 @@ export async function POST(request:NextRequest){
  let sent=0;let failed=0;
  for(const device of devices??[]){
   try{
+   const endpoint=new URL(device.endpoint);
+   const approvedHosts=["fcm.googleapis.com","updates.push.services.mozilla.com","push.services.mozilla.com","web.push.apple.com"];
+   if(endpoint.protocol!=="https:"||!approvedHosts.includes(endpoint.hostname)||endpoint.username||endpoint.password||endpoint.port){failed++;continue;}
    await webpush.sendNotification(
     {endpoint:device.endpoint,keys:{p256dh:device.p256dh,auth:device.auth_key}},
     JSON.stringify({title:notice.title,body:notice.message||"Tienes una novedad en PASIÓN APP.",
