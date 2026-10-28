@@ -55,6 +55,19 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
   if(err){setError(err.message);return;}
   setWriting(old=>({...old,[postId]:""}));setSuccess("Mensaje enviado.");await reload();
  }
+ async function removePost(post:Post){
+  if(!isBoard||busy)return;
+  if(!window.confirm("¿Eliminar el anuncio «"+post.title+"» y su conversación? Se borrarán también sus avisos de la bandeja. Esta acción no se puede deshacer."))return;
+  setBusy(true);setError("");setSuccess("");
+  const {error:err}=await db.rpc("delete_board_post",{p_post_id:post.id});
+  setBusy(false);
+  if(err){setError(err.message);return;}
+  setPosts(old=>old.filter(p=>p.id!==post.id));
+  setComments(old=>old.filter(c=>c.post_id!==post.id));
+  setWriting(old=>{const next={...old};delete next[post.id];return next;});
+  if(expanded===post.id)setExpanded(null);
+  setSuccess("Anuncio eliminado con su conversación y sus avisos.");
+ }
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Tablón de anuncios</h1></div></header>
@@ -66,6 +79,7 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
     <label>Mensaje<textarea required rows={4} maxLength={4000} minLength={3} placeholder="Escribe el comunicado para todos los músicos…" value={content} onChange={e=>setContent(e.target.value)}/></label>
     <label>Importancia<select value={priority} onChange={e=>setPriority(e.target.value)}><option value="normal">Normal</option><option value="importante">Importante</option></select></label>
     <button type="submit" disabled={busy} className="primaryButton">{busy?"Publicando…":"Publicar anuncio"}</button>
+    <p className="muted small">Todos los anuncios nuevos generan un aviso, tanto normales como importantes. Reciben el aviso al móvil quienes tengan las notificaciones activadas.</p>
    </form>
   </section>}
   <section className="boardFeed">
@@ -80,6 +94,7 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
      <h3>{post.title}</h3><p className="boardBody">{post.content}</p>
      <p className="muted small">Publicado por {names.get(post.author_id)||"Directiva"}</p>
      <button className="boardCommentsButton" type="button" onClick={()=>setExpanded(expanded===post.id?null:post.id)}>{expanded===post.id?"Ocultar conversación":"Ver conversación"} · {replies.length} mensajes</button>
+     {isBoard&&<div className="attendanceActions"><button className="secondaryButton" type="button" disabled={busy} onClick={()=>void removePost(post)}>Eliminar anuncio</button></div>}
      {expanded===post.id&&<div className="boardThread">
       {replies.length===0?<p className="muted small">Todavía no hay mensajes.</p>:replies.map(reply=><div className="boardReply" key={reply.id}>
        <div className="boardReplyHeading"><strong>{names.get(reply.author_id)||"Miembro"}</strong><span className="muted small">{date.format(new Date(reply.created_at))}</span></div>
