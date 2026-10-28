@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import PushSettings from "./push-settings";
 type Notification={id:string;user_id:string;kind:string;source_id:string;title:string;message:string;destination:string;created_at:string;read_at:string|null};
 const label:Record<string,string>={ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
 const dateTime=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short",timeZone:"Europe/Madrid"});
@@ -46,7 +47,8 @@ export default function Notifications({userId}:{userId:string}){
  return <main className="container">
   <Link className="backLink" href="/panel">← Volver al panel</Link>
   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Notificaciones</h1></div></header>
-  <p className="muted">Avisos internos para tu cuenta: ensayos, actuaciones, comunicados importantes y nuevas votaciones. Puedes consultarlos al entrar en PASIÓN APP.</p>
+  <p className="muted">Avisos sobre ensayos, actuaciones, comunicados y votaciones. Activa las notificaciones push para recibirlos también fuera de PASIÓN APP.</p>
+  <PushSettings userId={userId}/>
   <section className="notificationPanel">
    <div className="notificationToolbar">
     <div><h2>Bandeja de entrada</h2><p className="muted small">{unread.length} sin leer</p></div>
