@@ -19,8 +19,12 @@ function supported(){
  "PushManager" in window&&"Notification" in window;
 }
 
-export default function PushSettings({userId}:{userId:string}){
+export default function PushSettings({userId,required=false}:{userId:string;required?:boolean}){
  const isDemo=useDemoMode();
+ const [completed,setCompleted]=useState(false);
+ const [unsupportedDismissed,setUnsupportedDismissed]=useState(false);
+ const completionKey=`pasion-push-onboarding-v1:${userId}`;
+ function remember(){try{localStorage.setItem(completionKey,"done");}catch{}setCompleted(true);}
  const [available,setAvailable]=useState<boolean|null>(null);
  const [enabled,setEnabled]=useState(false);
  const [busy,setBusy]=useState(false);
@@ -30,6 +34,7 @@ export default function PushSettings({userId}:{userId:string}){
  useEffect(()=>{
   if(isDemo){setAvailable(true);setInfo("Demostración: no se solicitan permisos ni se activan avisos reales.");return;}
   let mounted=true;
+  try{if(localStorage.getItem(completionKey)==="done")setCompleted(true);}catch{}
   async function check(){
    const yes=supported();
    if(!mounted)return;
@@ -39,11 +44,21 @@ export default function PushSettings({userId}:{userId:string}){
     const reg=await navigator.serviceWorker.register("/sw.js",{scope:"/"});
     const sub=await reg.pushManager.getSubscription();
     if(!mounted)return;
-    setEnabled(Boolean(sub)&&Notification.permission==="granted");
+    const active=Boolean(sub)&&Notification.permission==="granted";
+    if(active&&sub){
+     const {data,error:lookupError}=await getSupabaseBrowser().from("push_subscriptions").select("user_id").eq("user_id",userId).eq("endpoint",sub.endpoint).maybeSingle();
+     if(!mounted)return;
+     if(lookupError)throw lookupError;
+     setEnabled(Boolean(data));
+     if(data)remember();
+    }else setEnabled(false);
    }catch{if(mounted)setInfo("El navegador no ha permitido preparar las notificaciones.");}
   }
-  void check();return()=>{mounted=false};
- },[isDemo]);
+  void check();
+  const recheck=()=>{if(document.visibilityState==="visible")void check();};
+  window.addEventListener("focus",recheck);document.addEventListener("visibilitychange",recheck);
+  return()=>{mounted=false;window.removeEventListener("focus",recheck);document.removeEventListener("visibilitychange",recheck);};
+ },[isDemo,userId,completionKey]);
  async function activate(){
   if(isDemo||busy)return;
   setBusy(true);setError("");setInfo("");
@@ -65,7 +80,7 @@ export default function PushSettings({userId}:{userId:string}){
     updated_at:new Date().toISOString()
    },{onConflict:"endpoint"});
    if(err)throw err;
-   setEnabled(true);
+   setEnabled(true);remember();
    setInfo("Notificaciones activadas en este dispositivo.");
   }catch(e){setError(e instanceof Error?e.message:"No se pudieron activar los avisos.");}
   finally{setBusy(false);}
@@ -86,7 +101,9 @@ export default function PushSettings({userId}:{userId:string}){
   }catch(e){setError(e instanceof Error?e.message:"No se pudieron desactivar los avisos.");}
   finally{setBusy(false);}
  }
- return <section className="notificationPanel">
+ if(required&&(isDemo||completed||unsupportedDismissed))return null;
+ const panel=<section className="notificationPanel" style={required?{maxWidth:760,margin:"0 auto"}:undefined}>
+ {required&&<><h1>Activa los avisos de PASIÓN APP</h1><p>Antes de continuar, activa las notificaciones para enterarte de ensayos, cambios y comunicados de la agrupación. Solo tendrás que hacerlo una vez en este móvil.</p><p>Pulsa «Activar notificaciones push» y después «Permitir» cuando lo pregunte tu móvil.</p></>}
   <h2>Notificaciones al móvil</h2>
   <p className="muted">Recibe avisos de ensayos convocados, cancelaciones, votaciones y comunicados aunque no tengas PASIÓN APP abierta. Puedes desactivarlos cuando quieras.</p>
   {available===null?<p className="muted">Comprobando compatibilidad…</p>:!available?
@@ -134,5 +151,7 @@ export default function PushSettings({userId}:{userId:string}){
     <p className="muted">Puedes pulsar Desactivar notificaciones en esta pantalla cuando quieras. Aunque no actives los avisos al móvil, las novedades seguirán en tu bandeja de entrada. La entrega puede retrasarse según la conexión y los ajustes del dispositivo.</p>
    </details>
   </div>
+ {required&&available===false&&<button type="button" className="secondaryButton" onClick={()=>setUnsupportedDismissed(true)}>Mi dispositivo no es compatible: continuar</button>}
  </section>;
+ return required?<dialog aria-label="Activar notificaciones" ref={node=>{if(node&&!node.open)node.showModal();}} onCancel={event=>event.preventDefault()} style={{position:"fixed",inset:0,width:"100%",maxWidth:"none",height:"100dvh",maxHeight:"none",margin:0,border:0,overflowY:"auto",background:"var(--page)",color:"var(--text)",padding:24}}>{panel}</dialog>:panel;
 }
