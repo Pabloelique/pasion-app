@@ -178,7 +178,7 @@ export default function MultiMarchVoting({manager,userId,superadmin=false}:{mana
      <p><strong>Marcha:</strong> {opts.find(o=>o.id===c.winning_option_id)?.title??winner?.title}</p>
      <p><strong>Autor:</strong> {c.composer}</p>
      <p><strong>Precio total de la marcha:</strong> {eur.format(Number(c.estimated_cost??0))}</p>
-     <p className="muted small">Cualquier miembro aprobado puede responder, aunque no haya participado en la elección de la marcha.</p>
+     <p className="muted small">Cualquier miembro aprobado puede responder, aunque no haya participado en la elección de la marcha. Aquí no se paga nada ni se adquiere ningún compromiso.</p>
      {myAnswer?<p className="voteOwn">Tu respuesta: <strong>{myAnswer.willing?"Sí, estaría dispuesto":"No participaría"}</strong></p>:
      <div className="voteActions"><button className="primaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,true)}>Sí, aportaría</button><button className="secondaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,false)}>No aportaría</button></div>}
      <p className="muted small">El precio indicado arriba es el total de la marcha. Si respondes «Sí, aportaría», verás abajo el coste estimado de tu parte.</p>
