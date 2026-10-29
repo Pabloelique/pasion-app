@@ -9,7 +9,7 @@ export function safeAppLink(path:string|null|undefined):string|null{
 export function noticeLink(kind:string,id:string,destination:string){
  if(validId(id)){
   if(kind==="ausencia")return "/panel/justificaciones#falta-"+id;
-  if(kind==="votacion")return "/panel/votaciones#votacion-"+id;
+  if(kind==="votacion"||kind==="aportacion")return "/panel/votaciones#votacion-"+id;
   if(["ensayo","actuacion","evento"].includes(kind))return "/panel/calendario#evento-"+id;
   if(kind==="comunicado")return "/panel/tablon#anuncio-"+id;
  }

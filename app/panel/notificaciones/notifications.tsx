@@ -8,7 +8,7 @@ import {useRecordAnchor} from "@/lib/use-record-anchor";
 import PushSettings from "./push-settings";
 type LinkedPost={id:string;content:string;link_path:string|null};
 type Notification={id:string;user_id:string;kind:string;source_id:string;title:string;message:string;destination:string;created_at:string;read_at:string|null};
-const label:Record<string,string>={ausencia:"Ausencia privada",ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
+const label:Record<string,string>={aportacion:"Aportación voluntaria",ausencia:"Ausencia privada",ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
 const dateTime=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short",timeZone:"Europe/Madrid"});
 export default function Notifications({userId}:{userId:string}){
  const db=useAppDatabase();
@@ -89,7 +89,7 @@ export default function Notifications({userId}:{userId:string}){
     <div className="notificationList">{shown.map(item=>{
      const post=linkedPosts.find(p=>p.id===item.source_id);
      const target=safeAppLink(post?.link_path)??(post?detectAnnouncementLink(item.message+" "+post.content,[]):null)??noticeLink(item.kind,item.source_id,item.destination);
-     const cta=item.kind==="ensayo"?"VER ENSAYO":item.kind==="actuacion"?"VER ACTUACIÓN":item.kind==="votacion"&&item.title.toLowerCase().includes("aportación")?"RESPONDE AQUÍ":actionLabel(target);
+     const cta=item.kind==="ensayo"?"VER ENSAYO":item.kind==="actuacion"?"VER ACTUACIÓN":(item.kind==="aportacion"||(item.kind==="votacion"&&item.title.toLowerCase().includes("aportación")))?"RESPONDE AQUÍ":actionLabel(target);
      return <article key={item.id} id={"aviso-"+item.id} tabIndex={-1} className={item.read_at?"notificationItem linkedRecord":"notificationItem notificationUnread linkedRecord"}>
       <div className="notificationInfo"><div className="notificationMeta">
        <span className="notificationKind">{label[item.kind]??"Aviso"}</span>
