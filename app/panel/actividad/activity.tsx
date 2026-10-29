@@ -27,7 +27,7 @@ export default function Activity(){
  },[]);
  return <main className="container"><Link className="backLink" href="/panel">← Volver al panel</Link>
   <h1>Actividad de usuarios</h1><p className="muted">Solo superadmin. Conectado significa que tiene la app visible y ha enviado una señal en los últimos 90 segundos. La lista se actualiza cada 15 segundos.</p>
-  <p className="muted">El último acceso muestra la última actividad detectada desde que se activó este apartado. No se registra el contenido que leen ni lo que escriben.</p>
+  <p className="muted">El último acceso muestra la fecha más reciente entre la actividad detectada por la app y el último inicio de sesión recuperado desde el 27 de octubre de 2026. Los inicios de sesión históricos no indican la sección visitada ni el tiempo conectado. No se registra el contenido que leen ni lo que escriben.</p>
   {loading&&<p role="status">Cargando actividad…</p>}{error&&<p className="formError" role="alert">{error}</p>}
   {!loading&&!error&&<><p><strong>{people.filter(p=>p.online).length} conectados</strong> · {people.length} miembros</p>
   <div className="requestGrid">{people.map(p=><article key={p.user_id} className="requestCard"><h2>{p.member_name||"Miembro"}</h2>
