@@ -128,6 +128,7 @@ export default async function PanelPage(){
     <span className="dashboardLinkIcon">{item.icon}</span><strong>{item.name}</strong><small>{item.detail}</small>
    </Link>)}</div>
   </section>}
+  {profile.role==="superadmin"&&<Link href="/panel/actividad" className="secondaryButton linkButton">Actividad de usuarios</Link>}
   <div className="logoutArea"><LogoutButton/></div>
  </main>;
 }
