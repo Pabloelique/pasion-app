@@ -1,18 +1,19 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppRouter} from "@/lib/app-data";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {noticeLink,actionLabel,safeAppLink,detectAnnouncementLink,validId} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 import PushSettings from "./push-settings";
 type LinkedPost={id:string;content:string;link_path:string|null};
 type Notification={id:string;user_id:string;kind:string;source_id:string;title:string;message:string;destination:string;created_at:string;read_at:string|null};
-const label:Record<string,string>={ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
+const label:Record<string,string>={ausencia:"Ausencia privada",ensayo:"Ensayo",actuacion:"Actuación",evento:"Actividad",comunicado:"Comunicado",votacion:"Votación"};
 const dateTime=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short",timeZone:"Europe/Madrid"});
 export default function Notifications({userId}:{userId:string}){
- const db=getSupabaseBrowser();
- const router=useRouter();
+ const db=useAppDatabase();
+ const isDemo=useDemoMode();
+ const router=useAppRouter();
  const [items,setItems]=useState<Notification[]>([]);
  const [linkedPosts,setLinkedPosts]=useState<LinkedPost[]>([]);
  const [loading,setLoading]=useState(true);
@@ -73,7 +74,7 @@ export default function Notifications({userId}:{userId:string}){
   <section className="notificationPanel">
    <div className="notificationToolbar">
     <div><h2>Bandeja de entrada</h2><p className="muted small">{unread.length} sin leer</p></div>
-    <button className="secondaryButton" type="button" disabled={busy||loading||unread.length===0} onClick={()=>void markAll()}>Marcar todas como leídas</button>
+    <button className="secondaryButton" type="button" disabled={isDemo||busy||loading||unread.length===0} onClick={()=>void markAll()}>Marcar todas como leídas</button>
    </div>
    <div className="notificationToolbar">
     <div className="notificationFilters">
@@ -95,10 +96,10 @@ export default function Notifications({userId}:{userId:string}){
        {!item.read_at&&<span className="notificationDot" aria-label="Sin leer"/>}
        <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
       </div><h3>{item.title}</h3>{(post?.content||item.message)&&<p className="noticeMessage">{post?.content||item.message}</p>}
-       <button className="primaryButton noticeCta" type="button" disabled={busy} onClick={()=>{if(item.read_at)router.push(target);else void mark(item.id,target);}}>{cta}</button>
+       <button className="primaryButton noticeCta" type="button" disabled={busy} onClick={()=>{if(isDemo||item.read_at)router.push(target);else void mark(item.id,target);}}>{cta}</button>
       </div>
       <div className="notificationActions">
-       {!item.read_at&&<button type="button" className="secondaryButton" disabled={busy} onClick={()=>void mark(item.id)}>Marcar leída</button>}
+       {!item.read_at&&<button type="button" className="secondaryButton" disabled={isDemo||busy} onClick={()=>void mark(item.id)}>Marcar leída</button>}
       </div>
      </article>;})}</div>}
    {items.length>=250&&<p className="muted small">Se muestran los 250 avisos más recientes.</p>}

@@ -1,9 +1,9 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
+import Link from "@/lib/app-data";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 import MultiMarchVoting from "./multi-march-voting";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 
 type Proposal={id:string;title:string;description:string;estimated_cost:number|null;closes_at:string;closed_at:string|null;created_at:string};
 type Ballot={proposal_id:string;choice:string};
@@ -11,7 +11,8 @@ type Total={proposal_id:string;yes_votes:number;no_votes:number};
 const fmt=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
 const money=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
 export default function Voting({role,userId}:{role:string;userId:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const canManage=role==="superadmin"||role==="directiva";
  const [proposals,setProposals]=useState<Proposal[]>([]);
  const [votes,setVotes]=useState<Ballot[]>([]);
@@ -125,8 +126,8 @@ export default function Voting({role,userId}:{role:string;userId:string}){
      <h3>{p.title}</h3>{p.description&&<p className="voteDescription">{p.description}</p>}
      {p.estimated_cost!==null&&<p className="muted">Coste orientativo de adquisición: <strong>{money.format(p.estimated_cost)}</strong></p>}
      {own?<p className="voteOwn">Tu voto: <strong>{own==="si"?"Sí, incorporarla":"No incorporarla"}</strong></p>:done?<p className="muted">La votación ha terminado.</p>:<div className="voteActions">
-       <button type="button" className="primaryButton" disabled={busy} onClick={()=>void vote(p,"si")}>Sí, incorporarla</button>
-       <button type="button" className="secondaryButton" disabled={busy} onClick={()=>void vote(p,"no")}>No incorporarla</button>
+       <button type="button" className="primaryButton" disabled={isDemo||busy} onClick={()=>void vote(p,"si")}>Sí, incorporarla</button>
+       <button type="button" className="secondaryButton" disabled={isDemo||busy} onClick={()=>void vote(p,"no")}>No incorporarla</button>
      </div>}
      {<div className="voteResult">
       <h4>{done?"Resultado":"Recuento provisional"} · {total} votos</h4>

@@ -37,13 +37,15 @@ export async function POST(request:NextRequest){
   return NextResponse.json({sent:0,reason:"Actualización sin contenido nuevo"});
  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data:notice,error:noticeError}=await db.from("app_notifications")
-  .select("id,user_id,title,message,destination").eq("id",input.record.id).maybeSingle();
+  .select("id,user_id,kind,title,message,destination").eq("id",input.record.id).maybeSingle();
  if(noticeError)return NextResponse.json({error:"No se pudo consultar el aviso"},{status:500});
  if(!notice)return NextResponse.json({sent:0,reason:"Aviso inexistente"});
  const {data:member,error:memberError}=await db.from("profiles")
-  .select("approval_status").eq("id",notice.user_id).maybeSingle();
+  .select("role,approval_status").eq("id",notice.user_id).maybeSingle();
  if(memberError)return NextResponse.json({error:"No se pudo validar el miembro"},{status:500});
  if(member?.approval_status!=="approved")return NextResponse.json({sent:0,reason:"Miembro no aprobado"});
+ if(notice.kind==="ausencia"&&member.role!=="superadmin"&&!(notice.user_id==="1fa6b0f6-448c-440a-8658-2fcf4c8553cc"&&member.role!=="viewer"))
+  return NextResponse.json({sent:0,reason:"Destinatario sin permiso para justificaciones"});
  const {data:devices,error:deviceError}=await db.from("push_subscriptions")
   .select("id,endpoint,p256dh,auth_key").eq("user_id",notice.user_id).limit(30);
  if(deviceError)return NextResponse.json({error:"No se pudieron consultar dispositivos"},{status:500});

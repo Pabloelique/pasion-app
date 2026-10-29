@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState,type FormEvent} from "react";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Contest={id:string;title:string;created_at:string;closes_at:string;winning_option_id:string|null;composer:string|null;estimated_cost:number|null;published_at:string|null};
@@ -13,7 +13,8 @@ const date=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"
 const eur=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
 
 export default function MultiMarchVoting({manager,userId}:{manager:boolean;userId:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const [contests,setContests]=useState<Contest[]>([]);
  const [options,setOptions]=useState<Option[]>([]);
  const [votes,setVotes]=useState<Vote[]>([]);
@@ -149,7 +150,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
     <p className="muted"><strong>Total: {results.filter(r=>r.contest_id===c.id).reduce((sum,r)=>sum+Number(r.vote_count),0)} votos</strong>{!closed&&" · Recuento provisional"}</p>
     <div className="marchContestOptions">{opts.map(o=><div className="marchContestOption" key={o.id}>
      <span><strong>{o.title}</strong><strong className="votePill" style={{display:"inline-block",marginLeft:10}}> {Number(results.find(r=>r.contest_id===c.id&&r.option_id===o.id)?.vote_count??0)} votos</strong>{myVote?.option_id===o.id&&<small> · Tu elección</small>}</span>
-     {!closed&&!myVote&&<button className="secondaryButton" disabled={busy} onClick={()=>void vote(c.id,o.id)}>Votar</button>}
+     {!closed&&!myVote&&<button className="secondaryButton" disabled={isDemo||busy} onClick={()=>void vote(c.id,o.id)}>Votar</button>}
     </div>)}</div>
     {!closed&&myVote&&<p className="voteOwn">Voto registrado. El ganador se confirma al terminar las 24 horas.</p>}
     {closed&&<p className="formSuccess">{winner?"Marcha ganadora: "+winner.title:win.reason}</p>}
@@ -166,7 +167,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
      <p><strong>Coste estimado:</strong> {eur.format(Number(c.estimated_cost??0))}</p>
      <p className="muted small">Indica solamente si estarías dispuesto a aportar. No se cobra, no genera deudas ni compromisos de pago.</p>
      {myAnswer?<p className="voteOwn">Tu respuesta: <strong>{myAnswer.willing?"Sí, estaría dispuesto":"No participaría"}</strong></p>:
-     <div className="voteActions"><button className="primaryButton" disabled={busy} onClick={()=>void answer(c.id,true)}>Sí, aportaría</button><button className="secondaryButton" disabled={busy} onClick={()=>void answer(c.id,false)}>No aportaría</button></div>}
+     <div className="voteActions"><button className="primaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,true)}>Sí, aportaría</button><button className="secondaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,false)}>No aportaría</button></div>}
      <p className="muted small">Respuestas: {Number(counts?.yes_count??0)} sí · {Number(counts?.no_count??0)} no</p>
     </div>}
     {manager&&<button type="button" className="voteClose" disabled={busy} onClick={()=>void remove(c.id)}>Eliminar votación</button>}

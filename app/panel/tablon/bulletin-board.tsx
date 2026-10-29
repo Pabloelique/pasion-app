@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {actionLabel,detectAnnouncementLink,safeAppLink,type LinkChoice} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Post={link_path:string|null;id:string;title:string;content:string;priority:string;author_id:string;created_at:string};
@@ -9,7 +9,8 @@ type Comment={id:string;post_id:string;content:string;author_id:string;created_a
 type Person={id:string;display_name:string};
 const date=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
 export default function BulletinBoard({role,userId}:{role:string;userId:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const isBoard=role==="superadmin"||role==="directiva";
  const [posts,setPosts]=useState<Post[]>([]);
  const [comments,setComments]=useState<Comment[]>([]);
@@ -132,7 +133,7 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
       </div>)}
       <form onSubmit={e=>{e.preventDefault();void sendComment(post.id);}} className="boardReplyForm">
        <label>Escribir mensaje<textarea required rows={2} maxLength={1500} value={writing[post.id]??""} onChange={e=>setWriting(old=>({...old,[post.id]:e.target.value}))} placeholder="Responder a este comunicado…"/></label>
-       <button disabled={busy||!(writing[post.id]??"").trim()} className="primaryButton" type="submit">{busy?"Enviando…":"Enviar respuesta"}</button>
+       <button disabled={isDemo||busy||!(writing[post.id]??"").trim()} className="primaryButton" type="submit">{busy?"Enviando…":"Enviar respuesta"}</button>
       </form>
      </div>}
     </article>;

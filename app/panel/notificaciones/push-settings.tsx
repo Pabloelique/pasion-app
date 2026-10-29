@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {useDemoMode} from "@/lib/app-data";
 
 function toBytes(base64:string){
  const padding="=".repeat((4-base64.length%4)%4);
@@ -19,6 +20,7 @@ function supported(){
 }
 
 export default function PushSettings({userId}:{userId:string}){
+ const isDemo=useDemoMode();
  const [available,setAvailable]=useState<boolean|null>(null);
  const [enabled,setEnabled]=useState(false);
  const [busy,setBusy]=useState(false);
@@ -26,6 +28,7 @@ export default function PushSettings({userId}:{userId:string}){
  const [error,setError]=useState("");
  const publicKey=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
  useEffect(()=>{
+  if(isDemo){setAvailable(true);setInfo("Demostración: no se solicitan permisos ni se activan avisos reales.");return;}
   let mounted=true;
   async function check(){
    const yes=supported();
@@ -40,9 +43,9 @@ export default function PushSettings({userId}:{userId:string}){
    }catch{if(mounted)setInfo("El navegador no ha permitido preparar las notificaciones.");}
   }
   void check();return()=>{mounted=false};
- },[]);
+ },[isDemo]);
  async function activate(){
-  if(busy)return;
+  if(isDemo||busy)return;
   setBusy(true);setError("");setInfo("");
   try{
    if(!publicKey)throw new Error("Falta configurar la clave pública de notificaciones en Vercel.");
@@ -68,7 +71,7 @@ export default function PushSettings({userId}:{userId:string}){
   finally{setBusy(false);}
  }
  async function deactivate(){
-  if(busy)return;
+  if(isDemo||busy)return;
   setBusy(true);setError("");setInfo("");
   try{
    const reg=await navigator.serviceWorker.ready;
@@ -85,12 +88,12 @@ export default function PushSettings({userId}:{userId:string}){
  }
  return <section className="notificationPanel">
   <h2>Notificaciones al móvil</h2>
-  <p className="muted">Recibe avisos de ensayos convocados, cancelaciones, votaciones y comunicados importantes aunque no tengas PASIÓN APP abierta. Puedes desactivarlos cuando quieras.</p>
+  <p className="muted">Recibe avisos de ensayos convocados, cancelaciones, votaciones y comunicados aunque no tengas PASIÓN APP abierta. Puedes desactivarlos cuando quieras.</p>
   {available===null?<p className="muted">Comprobando compatibilidad…</p>:!available?
    <p className="muted">Este navegador no admite notificaciones push en este contexto. En iPhone usa Safari → Compartir → Añadir a pantalla de inicio y abre PASIÓN APP desde su icono. En Android, utiliza un navegador compatible.</p>:
    <div className="attendanceActions">
-    {enabled?<button className="secondaryButton" disabled={busy} type="button" onClick={()=>void deactivate()}>{busy?"Procesando…":"Desactivar notificaciones"}</button>:
-     <button className="primaryButton" disabled={busy} type="button" onClick={()=>void activate()}>{busy?"Activando…":"Activar notificaciones push"}</button>}
+    {enabled?<button className="secondaryButton" disabled={isDemo||busy} type="button" onClick={()=>void deactivate()}>{busy?"Procesando…":"Desactivar notificaciones"}</button>:
+     <button className="primaryButton" disabled={isDemo||busy} type="button" onClick={()=>void activate()}>{busy?"Activando…":"Activar notificaciones push"}</button>}
    </div>}
   {enabled&&<p className="formSuccess">Permiso de notificaciones activo en este dispositivo.</p>}
   {info&&<p className="muted" role="status">{info}</p>}

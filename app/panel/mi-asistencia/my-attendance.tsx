@@ -1,12 +1,12 @@
 "use client";
 import {useEffect,useState} from "react";
-import Link from "next/link";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppDatabase} from "@/lib/app-data";
 type RecordItem={event_id:string;event_title:string;event_starts_at:string;attendance_status:string;marked_at:string};
 const date=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
 const labels:Record<string,string>={presente:"Presente",ausente:"Ausente",justificada:"Ausencia justificada"};
 export default function MyAttendance(){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
  const [rows,setRows]=useState<RecordItem[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");

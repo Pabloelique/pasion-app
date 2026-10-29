@@ -2,6 +2,7 @@ import {redirect} from "next/navigation";
 import Link from "next/link";
 import {getSupabaseServer} from "@/lib/supabase/server";
 import LogoutButton from "./salir";
+import MusicianDashboard from "./musician-dashboard";
 
 export const dynamic="force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function PanelPage(){
   <p className="muted">Mientras tanto, la información interna permanece bloqueada.</p><LogoutButton/>
  </section></main>;
 
+ const {data:canReviewAbsences}=await db.rpc("can_review_absences");
  const manager=profile.role==="directiva"||profile.role==="superadmin";
  const now=new Date().toISOString();
  const [eventsResult,postsResult,responsesResult,proposalsResult,notificationsResult]=await Promise.all([
@@ -69,6 +71,7 @@ export default async function PanelPage(){
  const attendance=(attendanceResult?.data??[]) as AttendanceTotal[];
  const totalMissing=attendance.reduce((sum,row)=>sum+Number(row.absent||0),0);
  const totalPresent=attendance.reduce((sum,row)=>sum+Number(row.attended||0),0);
+ if(!manager)return <MusicianDashboard profile={{first_name:profile.first_name}} events={events} posts={posts} responseItems={(responsesResult.data??[]) as ResponseItem[]} openVotes={openVotes} unread={unread} eventsError={!!eventsResult.error} postsError={!!postsResult.error} issues={issues} canReviewAbsences={canReviewAbsences===true}/>;
  return <main className="container dashboard">
   <header className="header dashboardHeader">
    <span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
@@ -116,7 +119,7 @@ export default async function PanelPage(){
   </section>}
   <section className="dashboardLinks">
    <div className="dashboardSectionHead"><h2>Tu espacio</h2></div>
-   <div className="dashboardLinkGrid">{shortcuts.map(item=><Link key={item.href} href={item.href} className="dashboardLink">
+   <div className="dashboardLinkGrid">{[...shortcuts,...(canReviewAbsences?[{href:"/panel/justificaciones",icon:"✓",name:"Justificaciones",detail:"Avisos privados de ausencia"}]:[])].map(item=><Link key={item.href} href={item.href} className="dashboardLink">
     <span className="dashboardLinkIcon">{item.icon}</span><strong>{item.name}</strong><small>{item.detail}</small>
    </Link>)}</div>
   </section>

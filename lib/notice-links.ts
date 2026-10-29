@@ -1,13 +1,14 @@
 const uuid="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 export const validId=(id:string)=>new RegExp("^"+uuid+"$","i").test(id);
-const sections=["/panel/votaciones","/panel/calendario","/panel/partituras","/panel/repertorio","/panel/tablon","/panel/notificaciones"];
+const sections=["/panel/votaciones","/panel/calendario","/panel/partituras","/panel/repertorio","/panel/tablon","/panel/notificaciones","/panel/justificaciones"];
 export function safeAppLink(path:string|null|undefined):string|null{
  if(!path)return null;
  if(sections.includes(path))return path;
- return new RegExp("^/panel/(?:votaciones#votacion-|calendario#evento-|tablon#anuncio-|notificaciones#aviso-)"+uuid+"$","i").test(path)?path:null;
+ return new RegExp("^/panel/(?:votaciones#votacion-|calendario#evento-|tablon#anuncio-|notificaciones#aviso-|justificaciones#falta-)"+uuid+"$","i").test(path)?path:null;
 }
 export function noticeLink(kind:string,id:string,destination:string){
  if(validId(id)){
+  if(kind==="ausencia")return "/panel/justificaciones#falta-"+id;
   if(kind==="votacion")return "/panel/votaciones#votacion-"+id;
   if(["ensayo","actuacion","evento"].includes(kind))return "/panel/calendario#evento-"+id;
   if(kind==="comunicado")return "/panel/tablon#anuncio-"+id;
@@ -15,6 +16,7 @@ export function noticeLink(kind:string,id:string,destination:string){
  return safeAppLink(destination)??"/panel/notificaciones";
 }
 export function actionLabel(path:string){
+ if(path.startsWith("/panel/justificaciones"))return "VER JUSTIFICACIÓN";
  if(path.startsWith("/panel/votaciones#"))return "VOTA AQUÍ";
  if(path==="/panel/votaciones")return "VER VOTACIÓN DE NUEVAS MARCHAS";
  if(path.startsWith("/panel/calendario#"))return "VER EVENTO";

@@ -1,14 +1,14 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppDatabase} from "@/lib/app-data";
 type Event={id:string;title:string;starts_at:string;ends_at:string;location:string};
 type Piece={id:string;event_id:string;march_title:string;objective:string;progress:string;position:number};
 type Score={title:string};
 const stages:Record<string,string>={pendiente:"Pendiente",trabajando:"En aprendizaje",mejorando:"Perfeccionando",lista:"Lista para actuar"};
 const dateFormat=new Intl.DateTimeFormat("es-ES",{dateStyle:"full",timeStyle:"short"});
 export default function RehearsalPlanner({role,userId}:{role:string;userId:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
  const canManage=role==="directiva"||role==="superadmin";
  const [events,setEvents]=useState<Event[]>([]);
  const [eventId,setEventId]=useState("");

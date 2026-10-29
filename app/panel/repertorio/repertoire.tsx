@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppDatabase} from "@/lib/app-data";
 type March={id:string;title:string;composer:string;youtube_url:string;spotify_url:string;notes:string;from_proposal:string|null;created_at:string};
 type Proposal={id:string;title:string;closed_at:string|null;closes_at:string;description:string};
 type Score={title:string};
@@ -22,7 +22,7 @@ function cleanTitle(title:string){
  .replace(/\s*[-–—_]\s*(trompeta|corneta|tromb[oó]n|bombardino|tuba|percusi[oó]n|guion|gui[oó]n|audio)(?:\s*\d+)?\s*$/i,"").trim();
 }
 export default function Repertoire({role,userId}:{role:string;userId:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
  const manager=role==="directiva"||role==="superadmin";
  const [marches,setMarches]=useState<March[]>([]);
  const [proposals,setProposals]=useState<Proposal[]>([]);

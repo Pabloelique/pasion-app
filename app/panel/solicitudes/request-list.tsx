@@ -31,6 +31,17 @@ export default function RequestList({ role }: {role:string}) {
     }catch(e){setError(e instanceof Error?e.message:"No se pudo registrar la decisión.");}
     finally{setWorking(null);}
   }
+  async function remove(item:Request) {
+    if(working!==null)return;
+    if(!window.confirm(`¿Eliminar definitivamente la solicitud de ${item.first_name} ${item.last_name} (${item.email})?\n\nTambién se borrará su cuenta y no podrá iniciar sesión. Tendrá que registrarse de nuevo. Esta acción no se puede deshacer.`))return;
+    setError("");setSuccess("");setWorking(item.id);
+    try{
+      const {error}=await getSupabaseBrowser().rpc("delete_registration_request",{target_user:item.id,confirmation_email:item.email});
+      if(error)throw error;
+      setItems(prev=>prev.filter(p=>p.id!==item.id));setSuccess("Solicitud y cuenta eliminadas definitivamente.");
+    }catch(e){setError(e instanceof Error?e.message:"No se pudo eliminar la solicitud.");}
+    finally{setWorking(null);}
+  }
   const musicians=items.filter(i=>i.requested_role==="musico");
   const board=items.filter(i=>i.requested_role==="directiva");
   function renderGroup(title:string,people:Request[]) {
@@ -41,6 +52,7 @@ export default function RequestList({ role }: {role:string}) {
         <div className="requestActions">
           <button className="primaryButton" disabled={working!==null} onClick={()=>void decide(item,"approved")}>{working===item.id?"Procesando…":"Aprobar"}</button>
           <button className="secondaryButton" disabled={working!==null} onClick={()=>void decide(item,"rejected")}>Rechazar</button>
+          <button className="rehearsalRemove" type="button" disabled={working!==null} onClick={()=>void remove(item)}>Eliminar solicitud y cuenta</button>
         </div></article>)}</div>}
     </section>;
   }

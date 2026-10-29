@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Link from "@/lib/app-data";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {validId} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string;cancelled_at:string|null};
@@ -17,7 +17,8 @@ const today=new Date();
 const initialMonth=new Date(today.getFullYear(),today.getMonth(),1);
 const prettyMonth=(d:Date)=>new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(d);
 export default function BandCalendar({role}:{role:string}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const manager=role==="directiva"||role==="superadmin";
  const [month,setMonth]=useState(initialMonth);
  const [events,setEvents]=useState<Event[]>([]);
@@ -45,7 +46,7 @@ export default function BandCalendar({role}:{role:string}){
   const end=new Date(month.getFullYear(),month.getMonth()+1,1);
   const [e,a,t]=await Promise.all([
    db.from("band_events").select("id,title,event_type,description,location,starts_at,ends_at,cancelled_at").gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at"),
-   db.from("event_responses").select("event_id,response,justification"),
+   db.rpc("my_event_responses"),
    db.from("event_target_parts").select("event_id,part_id")
   ]);
   if(e.error)setError(e.error.message);else setEvents((e.data??[]) as Event[]);
@@ -115,11 +116,11 @@ export default function BandCalendar({role}:{role:string}){
   if(!selected||!reply||selected.cancelled_at)return;
   if(reply==="no_asistire"&&reason.trim().length<5){setError("Escribe una justificación de al menos 5 caracteres.");return;}
   setBusy(true);setError("");setMessage("");
-  const result=await db.from("event_responses").upsert({event_id:selected.id,response:reply,justification:reply==="no_asistire"?reason.trim():null,updated_at:new Date().toISOString()},{onConflict:"event_id,user_id"});
+  const result=await db.rpc("submit_event_response",{target_event:selected.id,answer:reply,reason:reply==="no_asistire"?reason.trim():null});
   setBusy(false);
   if(result.error){setError(result.error.message);return;}
   setMessage("Tu respuesta se ha guardado.");
-  const a=await db.from("event_responses").select("event_id,response,justification");
+  const a=await db.rpc("my_event_responses");
   if(!a.error)setAnswers((a.data??[]) as Response[]);
  }
  return <main className="container">
@@ -165,8 +166,9 @@ export default function BandCalendar({role}:{role:string}){
    {!selected.cancelled_at&&<><h3>Mi asistencia</h3><p className="muted">{selectedAnswer?"Respuesta registrada: "+(selectedAnswer.response==="asistire"?"Asistiré":"No asistiré"):"Todavía no has respondido."}</p>
    <div className="calendarChoices"><label><input type="radio" name="response" checked={reply==="asistire"} onChange={()=>setReply("asistire")}/> Asistiré</label>
    <label><input type="radio" name="response" checked={reply==="no_asistire"} onChange={()=>setReply("no_asistire")}/> No asistiré</label></div>
-   {reply==="no_asistire"&&<label className="calendarReason">Justificación de ausencia<textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} minLength={5} placeholder="Explica el motivo de tu ausencia"/></label>}
-   <button type="button" className="primaryButton" disabled={busy||!reply} onClick={()=>void respond()}>{busy?"Guardando…":"Guardar mi respuesta"}</button></>}
+   {reply==="no_asistire"&&<p className="muted small">El motivo solo lo reciben el superadmin y la persona autorizada. Para modificar el motivo guardado, escríbelo de nuevo.</p>}
+   {reply==="no_asistire"&&<label className="calendarReason">Justificación de ausencia<textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} minLength={5} maxLength={2000} placeholder="Explica el motivo de tu ausencia"/></label>}
+   <button type="button" className="primaryButton" disabled={isDemo||busy||!reply} onClick={()=>void respond()}>{busy?"Guardando…":"Guardar mi respuesta"}</button></>}
   </section>}
   <section className="calendarAgenda"><h2>Próximos eventos del mes</h2>{events.map(e=><button key={e.id} type="button" onClick={()=>choose(e)} className="calendarAgendaItem"><span>{fmt.format(new Date(e.starts_at))} · {tm.format(new Date(e.starts_at))}</span><strong>{e.cancelled_at?"CANCELADO · ":""}{e.title}</strong><small>{types[e.event_type]}{e.location?" · "+e.location:""}</small></button>)}</section>
  </main>;

@@ -1,8 +1,8 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import Link from "next/link";
+import Link from "@/lib/app-data";
 import ScoreStand from "./score-stand";
-import {getSupabaseBrowser} from "@/lib/supabase/client";
+import {useAppDatabase} from "@/lib/app-data";
 type Score={id:string;title:string;musical_part_id:number;storage_path:string;mime_type:string;created_at:string};
 type Part={id:number;name:string};
 const types:Record<string,string>={"application/pdf":"PDF","image/jpeg":"Imagen JPEG","image/png":"Imagen PNG","image/webp":"Imagen WebP","audio/mpeg":"Audio MP3","audio/wav":"Audio WAV","audio/x-wav":"Audio WAV","audio/mp4":"Audio M4A","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"Word DOCX"};
@@ -23,7 +23,7 @@ function folderKey(name:string){
 }
 const extensions:Record<string,string>={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","audio/mpeg":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/mp4":"m4a","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx"};
 export default function ScoreLibrary({role,partId}:{role:string;partId:number|null}){
- const db=getSupabaseBrowser();
+ const db=useAppDatabase();
  const canUpload=role==="superadmin"||role==="directiva";
  const [parts,setParts]=useState<Part[]>([]);
  const [scores,setScores]=useState<Score[]>([]);
