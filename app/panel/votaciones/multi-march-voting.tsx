@@ -2,6 +2,7 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 
+import {contributionPerPerson} from "@/lib/contributions";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Contest={id:string;title:string;created_at:string;closes_at:string;winning_option_id:string|null;composer:string|null;estimated_cost:number|null;published_at:string|null};
 type Option={id:string;contest_id:string;title:string};
@@ -29,6 +30,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
  const [countsError,setCountsError]=useState("");
+ const [contributionsError,setContributionsError]=useState("");
  const [now,setNow]=useState(Date.now());
  async function reload(){
   setLoading(true);setError("");
@@ -48,24 +50,31 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
    setVotes((c.data??[]) as Vote[]);
    setAnswers((d.data??[]) as Answer[]);
    setResults((e.data??[]) as Result[]);
-   setTotals((f.data??[]) as Total[]);
+   setTotals((f.data??[]) as Total[]);setContributionsError("");
   }
   setNow(Date.now());setLoading(false);
  }
  useEffect(()=>{void reload();},[]);
  useEffect(()=>{
-  let active=true;
+  let active=true,inFlight=false;
   async function updateCounts(){
-   if(document.visibilityState==="hidden")return;
-   const result=await db.rpc("march_contest_results");
+   if(!active||inFlight||document.visibilityState==="hidden")return;
+   inFlight=true;
+   try{
+   const [result,contributions]=await Promise.all([db.rpc("march_contest_results"),db.rpc("march_contest_contribution_totals")]);
    if(!active)return;
    if(result.error)setCountsError("No se pudo actualizar el recuento. Se muestran los últimos datos disponibles.");
    else{setResults((result.data??[]) as Result[]);setCountsError("");}
+   if(contributions.error)setContributionsError("No se pudo actualizar el coste por persona. Se volverá a intentar automáticamente.");
+   else{setTotals((contributions.data??[]) as Total[]);setContributionsError("");}
    setNow(Date.now());
+   }catch{if(active){setCountsError("No se pudo actualizar el recuento.");setContributionsError("No se pudo actualizar el coste por persona. Se volverá a intentar automáticamente.");}}
+   finally{inFlight=false;}
   }
-  const timer=setInterval(()=>void updateCounts(),30000);
+  const timer=setInterval(()=>void updateCounts(),5000);
   window.addEventListener("focus",updateCounts);
-  return()=>{active=false;clearInterval(timer);window.removeEventListener("focus",updateCounts);};
+  document.addEventListener("visibilitychange",updateCounts);
+  return()=>{active=false;clearInterval(timer);window.removeEventListener("focus",updateCounts);document.removeEventListener("visibilitychange",updateCounts);};
  },[]);
 
  useRecordAnchor("votacion-",contests.map(c=>c.id).join(","));
@@ -120,7 +129,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
  }
  return <section className="voteMultiSection">
   <h2>Votación entre varias marchas · 24 horas</h2>
-  <p className="muted">Cada músico elige una marcha. Puedes ver cuántos votos lleva cada marcha. El recuento se actualiza cada 30 segundos mientras estás en esta pantalla; al acabar las 24 horas se confirma la ganadora. La aportación económica <strong>solo se consulta cuando la directiva introduce el autor y el importe y pulsa Publicar</strong>.</p>
+  <p className="muted">Cada músico elige una marcha. Puedes ver cuántos votos lleva cada marcha. El recuento y el coste por persona se actualizan cada 5 segundos mientras estás en esta pantalla; al acabar las 24 horas se confirma la ganadora. La aportación económica <strong>solo se consulta cuando la directiva introduce el autor y el importe y pulsa Publicar</strong>.</p>
   {manager&&<section className="voteCard"><h3>Crear nueva votación</h3><form className="voteForm" onSubmit={e=>void create(e)}>
    <label>Título de la votación<input value={title} minLength={3} maxLength={160} required onChange={e=>setTitle(e.target.value)} placeholder="Elegir próxima marcha"/></label>
    <fieldset className="marchContestChoices"><legend>Marchas candidatas</legend>
@@ -142,6 +151,8 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
    const win=closed?getWinner(c.id):{id:null,reason:""};
    const winner=opts.find(o=>o.id===win.id);
    const counts=totals.find(t=>t.contest_id===c.id);
+   const contributors=counts?Number(counts.yes_count):null;
+   const perPerson=contributionPerPerson(c.estimated_cost===null?null:Number(c.estimated_cost),contributors??0);
    const input=details[c.id]??{composer:"",cost:""};
    return <article className="voteCard linkedRecord" key={c.id} id={"votacion-"+c.id} tabIndex={-1}>
     <div className="voteTop"><span className="votePill">{c.published_at?"Aportaciones abiertas":closed?"24 horas finalizadas":"Votación abierta"}</span><span className="muted small">Cierra: {date.format(new Date(c.closes_at))}</span></div>
@@ -165,10 +176,17 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
      <p><strong>Marcha:</strong> {opts.find(o=>o.id===c.winning_option_id)?.title??winner?.title}</p>
      <p><strong>Autor:</strong> {c.composer}</p>
      <p><strong>Coste estimado:</strong> {eur.format(Number(c.estimated_cost??0))}</p>
-     <p className="muted small">Indica solamente si estarías dispuesto a aportar. No se cobra, no genera deudas ni compromisos de pago.</p>
+     <p className="muted small">Cualquier miembro aprobado puede responder, aunque no haya participado en la elección de la marcha.</p>
      {myAnswer?<p className="voteOwn">Tu respuesta: <strong>{myAnswer.willing?"Sí, estaría dispuesto":"No participaría"}</strong></p>:
      <div className="voteActions"><button className="primaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,true)}>Sí, aportaría</button><button className="secondaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,false)}>No aportaría</button></div>}
-     <p className="muted small">Respuestas: {Number(counts?.yes_count??0)} sí · {Number(counts?.no_count??0)} no</p>
+     {counts&&<p className="muted small">Respuestas: {Number(counts.yes_count)} sí · {Number(counts.no_count)} no</p>}
+     <div className="notice" aria-live="polite" aria-atomic="true">
+      <p><strong>Coste estimado por persona: </strong>{contributionsError?"Pendiente de actualizar":!counts?"Calculando…":perPerson===null?"Aún no hay personas dispuestas a aportar":eur.format(perPerson)}</p>
+      {contributors!==null&&contributors>0&&!contributionsError&&<p className="muted small">Coste total repartido entre {contributors} {contributors===1?"persona dispuesta":"personas dispuestas"} a aportar, redondeado a céntimos.</p>}
+      <p className="muted small">Es un cálculo orientativo. Aquí no se paga nada ni se adquiere ningún compromiso. Si el coste final por persona no resulta razonable, no se llevará adelante.</p>
+      <p className="muted small">Se actualiza automáticamente cada 5 segundos al cambiar las respuestas.</p>
+      {contributionsError&&<p className="formError" role="status">{contributionsError}</p>}
+     </div>
     </div>}
     {manager&&<button type="button" className="voteClose" disabled={busy} onClick={()=>void remove(c.id)}>Eliminar votación</button>}
    </article>;
