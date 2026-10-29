@@ -83,7 +83,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
    const {error:err}=await getSupabaseBrowser().from("push_subscriptions").upsert({
     user_id:userId,endpoint:data.endpoint,p256dh:data.keys.p256dh,auth_key:data.keys.auth,
     updated_at:new Date().toISOString()
-   },{onConflict:"endpoint"});
+   },{onConflict:"user_id,endpoint"});
    if(err)throw err;
    setEnabled(true);remember();
    setInfo("Notificaciones activadas en este dispositivo.");
@@ -100,9 +100,10 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
     const {error:err}=await getSupabaseBrowser().from("push_subscriptions")
      .delete().eq("user_id",userId).eq("endpoint",sub.endpoint);
     if(err)throw err;
-    await sub.unsubscribe();
+    // La suscripción del navegador puede estar compartida por otras cuentas.
+    // Dar de baja solo este registro mantiene sus avisos independientes.
    }
-   setEnabled(false);setInfo("Notificaciones desactivadas en este dispositivo.");
+   setEnabled(false);setInfo("Notificaciones desactivadas para esta cuenta en este dispositivo.");
   }catch(e){setError(e instanceof Error?e.message:"No se pudieron desactivar los avisos.");}
   finally{setBusy(false);}
  }
@@ -120,7 +121,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
   {enabled&&<p className="formSuccess">Permiso de notificaciones activo en este dispositivo.</p>}
   {info&&<p className="muted" role="status">{info}</p>}
   {error&&<p className="formError" role="alert">{error}</p>}
-  <p className="muted small">Cada móvil debe activar los avisos por separado. Si no los activas, seguirás viendo las novedades en la bandeja de PASIÓN APP.</p>
+  <p className="muted small">Cada cuenta debe activar los avisos una vez en cada móvil. Si utilizas varias cuentas en el mismo dispositivo, cada una mantiene su activación independiente. Si no los activas, seguirás viendo las novedades en la bandeja de PASIÓN APP.</p>
   <div aria-labelledby="push-guide-title">
    <h3 id="push-guide-title">Guía según tu móvil</h3>
    <p className="muted">Si ya tienes PASIÓN APP en la pantalla de inicio, empieza abriendo ese icono. No borres el acceso: primero sigue los pasos de tu móvil.</p>
