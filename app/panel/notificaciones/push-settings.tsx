@@ -90,33 +90,16 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
   }catch(e){setError(pushActivationError(e,phase));}
   finally{setBusy(false);}
  }
- async function deactivate(){
-  if(isDemo||busy)return;
-  setBusy(true);setError("");setInfo("");
-  try{
-   const reg=await navigator.serviceWorker.ready;
-   const sub=await reg.pushManager.getSubscription();
-   if(sub){
-    const {error:err}=await getSupabaseBrowser().from("push_subscriptions")
-     .delete().eq("user_id",userId).eq("endpoint",sub.endpoint);
-    if(err)throw err;
-    // La suscripción del navegador puede estar compartida por otras cuentas.
-    // Dar de baja solo este registro mantiene sus avisos independientes.
-   }
-   setEnabled(false);setInfo("Notificaciones desactivadas para esta cuenta en este dispositivo.");
-  }catch(e){setError(e instanceof Error?e.message:"No se pudieron desactivar los avisos.");}
-  finally{setBusy(false);}
- }
+ if(!isDemo&&(enabled||(!required&&available===null)))return null;
  if(required&&(isDemo||completed||unsupportedDismissed))return null;
  const panel=<section className="notificationPanel" style={required?{maxWidth:760,margin:"0 auto"}:undefined}>
  {required&&<><h1>Activa los avisos de PASIÓN APP</h1><p>Antes de continuar, activa las notificaciones para enterarte de ensayos, cambios y comunicados de la agrupación. Solo tendrás que hacerlo una vez en este móvil.</p><p>Pulsa «Activar notificaciones push» y después «Permitir» cuando lo pregunte tu móvil.</p></>}
   <h2>Notificaciones al móvil</h2>
-  <p className="muted">Recibe avisos de ensayos convocados, cancelaciones, votaciones y comunicados aunque no tengas PASIÓN APP abierta. Puedes desactivarlos cuando quieras.</p>
+  <p className="muted">Recibe avisos de ensayos convocados, cancelaciones, votaciones y comunicados aunque no tengas PASIÓN APP abierta.</p>
   {available===null?<p className="muted">Comprobando compatibilidad…</p>:!available?
    <p className="muted">Este navegador no admite notificaciones push en este contexto. En iPhone usa Safari → Compartir → Añadir a pantalla de inicio y abre PASIÓN APP desde su icono. En Android, utiliza un navegador compatible.</p>:
    <div className="attendanceActions">
-    {enabled?<button className="secondaryButton" disabled={isDemo||busy} type="button" onClick={()=>void deactivate()}>{busy?"Procesando…":"Desactivar notificaciones"}</button>:
-     <button className="primaryButton" disabled={isDemo||busy} type="button" onClick={()=>void activate()}>{busy?"Activando…":"Activar notificaciones push"}</button>}
+    <button className="primaryButton" disabled={isDemo||busy} type="button" onClick={()=>void activate()}>{busy?"Activando…":"Activar notificaciones push"}</button>
    </div>}
   {enabled&&<p className="formSuccess">Permiso de notificaciones activo en este dispositivo.</p>}
   {info&&<p className="muted" role="status">{info}</p>}
@@ -154,7 +137,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
      <li>Si el móvil restringe la actividad en segundo plano o usa ahorro de batería, revisa esas opciones para el navegador o PASIÓN APP.</li>
      <li>Los avisos corresponden a las novedades que te afectan. Activarlos no vuelve a enviar los avisos antiguos; compruébalo con un aviso nuevo de directiva.</li>
     </ul>
-    <p className="muted">Puedes pulsar Desactivar notificaciones en esta pantalla cuando quieras. Aunque no actives los avisos al móvil, las novedades seguirán en tu bandeja de entrada. La entrega puede retrasarse según la conexión y los ajustes del dispositivo.</p>
+    <p className="muted">Aunque no actives los avisos al móvil, las novedades seguirán en tu bandeja de entrada. La entrega puede retrasarse según la conexión y los ajustes del dispositivo.</p>
    </details>
   </div>
  {required&&available===false&&<button type="button" className="secondaryButton" onClick={()=>setUnsupportedDismissed(true)}>Mi dispositivo no es compatible: continuar</button>}
