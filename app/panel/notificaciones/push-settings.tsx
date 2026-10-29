@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 import {useDemoMode} from "@/lib/app-data";
+import {pushActivationError} from "@/lib/push-errors";
 
 function toBytes(base64:string){
  const padding="=".repeat((4-base64.length%4)%4);
@@ -61,12 +62,15 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
  },[isDemo,userId,completionKey]);
  async function activate(){
   if(isDemo||busy)return;
+  let phase:"preparación"|"permiso"|"suscripción"|"guardado"="preparación";
   setBusy(true);setError("");setInfo("");
   try{
    if(!publicKey)throw new Error("Falta configurar la clave pública de notificaciones en Vercel.");
    if(!supported())throw new Error("Este dispositivo no admite notificaciones push desde esta página.");
+   phase="permiso";
    const permission=await Notification.requestPermission();
    if(permission!=="granted")throw new Error("Activa el permiso de notificaciones en los ajustes del dispositivo.");
+   phase="suscripción";
    const reg=await navigator.serviceWorker.ready;
    const existing=await reg.pushManager.getSubscription();
    const sub=existing??await reg.pushManager.subscribe({
@@ -74,6 +78,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
    });
    const data=sub.toJSON();
    if(!data.endpoint||!data.keys?.p256dh||!data.keys?.auth)throw new Error("No se pudo preparar la suscripción.");
+   phase="guardado";
    // La base de datos solo acepta suscripciones del usuario autenticado.
    const {error:err}=await getSupabaseBrowser().from("push_subscriptions").upsert({
     user_id:userId,endpoint:data.endpoint,p256dh:data.keys.p256dh,auth_key:data.keys.auth,
@@ -82,7 +87,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
    if(err)throw err;
    setEnabled(true);remember();
    setInfo("Notificaciones activadas en este dispositivo.");
-  }catch(e){setError(e instanceof Error?e.message:"No se pudieron activar los avisos.");}
+  }catch(e){setError(pushActivationError(e,phase));}
   finally{setBusy(false);}
  }
  async function deactivate(){
