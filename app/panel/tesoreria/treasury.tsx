@@ -1,4 +1,5 @@
 "use client";
+import {csvCell} from "@/lib/csv";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
@@ -67,7 +68,7 @@ export default function Treasury({userId}:{userId:string}){
  }
  function exportCsv(){
   const headers=["Fecha","Tipo","Categoría","Concepto","Importe EUR","Método","Referencia","Creado por","ID","Anula a"];
-  const val=(s:string)=>'"'+s.replaceAll('"','""')+'"';
+  const val=csvCell;
   const lines=[headers.join(";"),...visible.map(m=>[
    m.movement_date,m.kind,categories[m.category]??m.category,m.description,(m.amount_cents/100).toFixed(2).replace(".",","),methods[m.payment_method]??m.payment_method,m.reference,m.created_by,m.id,m.reversal_of??""
   ].map(v=>val(String(v))).join(";"))];

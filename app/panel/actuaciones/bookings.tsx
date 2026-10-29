@@ -1,4 +1,5 @@
 "use client";
+import {csvCell} from "@/lib/csv";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
@@ -62,7 +63,7 @@ export default function Bookings({userId}:{userId:string}){
   setPaying(null);setPaidAmount("");setPaidRef("");setSuccess("Cobro registrado. Recuerda reflejarlo en Tesorería si llevas ambos libros.");await reload();
  }
  function exportCsv(){
-  const esc=(s:string)=>'"'+s.replaceAll('"','""')+'"';
+  const esc=csvCell;
   const head=["Fecha","Actuación","Contratante","Localidad","Estado","Caché EUR","Cobrado EUR","Pendiente EUR","Referencia"];
   const data=shown.map(b=>{const paid=sums.get(b.id)??0;return [b.performance_date,b.title,b.customer_name,b.location,statuses[b.status],(b.fee_cents/100).toFixed(2),(paid/100).toFixed(2),((b.fee_cents-paid)/100).toFixed(2),b.contract_reference].map(v=>esc(String(v))).join(";");});
   const blob=new Blob(["\uFEFF"+[head.join(";"),...data].join("\r\n")],{type:"text/csv;charset=utf-8"});
