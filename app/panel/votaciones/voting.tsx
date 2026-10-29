@@ -102,7 +102,7 @@ export default function Voting({role,userId}:{role:string;userId:string}){
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon">♫</span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Votación de nuevas marchas</h1></div></header>
   <p className="muted">Vota qué marchas te gustaría incorporar. Cada miembro aprobado dispone de un voto por propuesta. Puedes consultar el recuento provisional mientras la votación está abierta.</p>
-  <MultiMarchVoting manager={canManage} userId={userId}/>
+  <MultiMarchVoting manager={canManage} userId={userId} superadmin={role==="superadmin"}/>
   <hr style={{margin:"32px 0",opacity:0.2}}/>
   {canManage&&<section className="voteCard"><h2>Proponer una marcha (votación clásica Sí/No)</h2>
    <form className="voteForm" onSubmit={e=>void create(e)}>

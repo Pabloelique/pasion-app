@@ -2,6 +2,7 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 
+import ContributionPeople from "./contribution-people";
 import {contributionPerPerson} from "@/lib/contributions";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
 type Contest={id:string;title:string;created_at:string;closes_at:string;winning_option_id:string|null;composer:string|null;estimated_cost:number|null;published_at:string|null};
@@ -13,7 +14,7 @@ type Total={contest_id:string;yes_count:number;no_count:number};
 const date=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
 const eur=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
 
-export default function MultiMarchVoting({manager,userId}:{manager:boolean;userId:string}){
+export default function MultiMarchVoting({manager,userId,superadmin=false}:{manager:boolean;userId:string;superadmin?:boolean}){
  const db=useAppDatabase();
  const isDemo=useDemoMode();
  const [contests,setContests]=useState<Contest[]>([]);
@@ -32,6 +33,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
  const [countsError,setCountsError]=useState("");
  const [contributionsError,setContributionsError]=useState("");
  const [now,setNow]=useState(Date.now());
+ const [peopleContest,setPeopleContest]=useState<string|null>(null);
  async function reload(){
   setLoading(true);setError("");
   const [a,b,c,d,e,f]=await Promise.all([
@@ -105,7 +107,7 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
   if(!manager||busy)return;
   const values=details[id]??{composer:"",cost:""};
   if(values.composer.trim().length<2||values.cost.trim()===""||!Number.isFinite(Number(values.cost))||Number(values.cost)<0){
-   setError("Introduce el autor y el importe antes de publicar.");return;
+   setError("Introduce el autor y el precio total de la marcha antes de publicar.");return;
   }
   if(!window.confirm("¿Publicar la marcha ganadora con su autor e importe para que los músicos respondan si quieren contribuir?"))return;
   setBusy(true);setError("");setSuccess("");
@@ -168,25 +170,27 @@ export default function MultiMarchVoting({manager,userId}:{manager:boolean;userI
     {closed&&winner&&!c.published_at&&<div className="marchContestPublish">
      {manager?<><h4>Completar y publicar consulta de aportación</h4><p className="muted small">Hasta que pulses Publicar, los músicos no podrán indicar si pagan por esta marcha.</p>
       <label>Autor o compositor<input value={input.composer} maxLength={160} onChange={e=>setDetails(old=>({...old,[c.id]:{...input,composer:e.target.value}}))} placeholder="Autor de la marcha"/></label>
-      <label>Importe total estimado (€)<input type="number" min="0" step="0.01" value={input.cost} onChange={e=>setDetails(old=>({...old,[c.id]:{...input,cost:e.target.value}}))} placeholder="Ej. 150,00"/></label>
+      <label>Precio total de la marcha (€)<input type="number" min="0" step="0.01" value={input.cost} onChange={e=>setDetails(old=>({...old,[c.id]:{...input,cost:e.target.value}}))} placeholder="Ej. 150,00"/></label>
       <button className="primaryButton" disabled={busy} onClick={()=>void publish(c.id)}>Publicar consulta de aportación</button>
      </>:<p className="muted">Pendiente de que la directiva introduzca el autor y el importe y publique la consulta.</p>}
     </div>}
     {c.published_at&&<div className="marchContestPublish"><h4>Consulta de aportación voluntaria</h4>
      <p><strong>Marcha:</strong> {opts.find(o=>o.id===c.winning_option_id)?.title??winner?.title}</p>
      <p><strong>Autor:</strong> {c.composer}</p>
-     <p><strong>Coste estimado:</strong> {eur.format(Number(c.estimated_cost??0))}</p>
+     <p><strong>Precio total de la marcha:</strong> {eur.format(Number(c.estimated_cost??0))}</p>
      <p className="muted small">Cualquier miembro aprobado puede responder, aunque no haya participado en la elección de la marcha.</p>
      {myAnswer?<p className="voteOwn">Tu respuesta: <strong>{myAnswer.willing?"Sí, estaría dispuesto":"No participaría"}</strong></p>:
      <div className="voteActions"><button className="primaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,true)}>Sí, aportaría</button><button className="secondaryButton" disabled={isDemo||busy} onClick={()=>void answer(c.id,false)}>No aportaría</button></div>}
+     <p className="muted small">El precio indicado arriba es el total de la marcha. Si respondes «Sí, aportaría», verás abajo el coste estimado de tu parte.</p>
      {counts&&<p className="muted small">Respuestas: {Number(counts.yes_count)} sí · {Number(counts.no_count)} no</p>}
-     <div className="notice" aria-live="polite" aria-atomic="true">
+     {myAnswer?.willing===true&&<div className="notice" aria-live="polite" aria-atomic="true">
       <p><strong>Coste estimado por persona: </strong>{contributionsError?"Pendiente de actualizar":!counts?"Calculando…":perPerson===null?"Aún no hay personas dispuestas a aportar":eur.format(perPerson)}</p>
       {contributors!==null&&contributors>0&&!contributionsError&&<p className="muted small">Coste total repartido entre {contributors} {contributors===1?"persona dispuesta":"personas dispuestas"} a aportar, redondeado a céntimos.</p>}
       <p className="muted small">Es un cálculo orientativo. Aquí no se paga nada ni se adquiere ningún compromiso. Si el coste final por persona no resulta razonable, no se llevará adelante.</p>
       <p className="muted small">Se actualiza automáticamente cada 5 segundos al cambiar las respuestas.</p>
       {contributionsError&&<p className="formError" role="status">{contributionsError}</p>}
-     </div>
+     </div>}
+     {superadmin&&!isDemo&&<><button type="button" className="secondaryButton" onClick={()=>setPeopleContest(old=>old===c.id?null:c.id)}>{peopleContest===c.id?"Ocultar quién ha respondido":"Ver quién ha respondido"}</button>{peopleContest===c.id&&<ContributionPeople contestId={c.id}/>}</>}
     </div>}
     {manager&&<button type="button" className="voteClose" disabled={busy} onClick={()=>void remove(c.id)}>Eliminar votación</button>}
    </article>;
