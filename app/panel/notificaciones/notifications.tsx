@@ -88,14 +88,16 @@ export default function Notifications({userId}:{userId:string}){
    {loading?<p className="muted">Cargando avisos…</p>:shown.length===0?<p className="muted">No tienes notificaciones en esta categoría.</p>:
     <div className="notificationList">{shown.map(item=>{
      const post=linkedPosts.find(p=>p.id===item.source_id);
+     const isContribution=item.kind==="aportacion"||(item.kind==="votacion"&&item.title.toLowerCase().includes("aportación"));
      const target=safeAppLink(post?.link_path)??(post?detectAnnouncementLink(item.message+" "+post.content,[]):null)??noticeLink(item.kind,item.source_id,item.destination);
-     const cta=item.kind==="ensayo"?"VER ENSAYO":item.kind==="actuacion"?"VER ACTUACIÓN":(item.kind==="aportacion"||(item.kind==="votacion"&&item.title.toLowerCase().includes("aportación")))?"RESPONDE AQUÍ":actionLabel(target);
+     const cta=item.kind==="ensayo"?"VER ENSAYO":item.kind==="actuacion"?"VER ACTUACIÓN":isContribution?"RESPONDE AQUÍ":actionLabel(target);
      return <article key={item.id} id={"aviso-"+item.id} tabIndex={-1} className={item.read_at?"notificationItem linkedRecord":"notificationItem notificationUnread linkedRecord"}>
       <div className="notificationInfo"><div className="notificationMeta">
        <span className="notificationKind">{label[item.kind]??"Aviso"}</span>
        {!item.read_at&&<span className="notificationDot" aria-label="Sin leer"/>}
        <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
-      </div><h3>{item.title}</h3>{(post?.content||item.message)&&<p className="noticeMessage">{post?.content||item.message}</p>}
+      </div><h3>{isContribution?"Pagar la marcha entre quienes quieran aportar":item.title}</h3>{(post?.content||item.message)&&<p className="noticeMessage">{post?.content||item.message}</p>}
+       {isContribution&&<p className="noticeMessage">La marcha se pagaría entre todas las personas que quieran aportar. Aquí solo indicas si participarías; no se realiza ningún pago en la app ni se adquiere ningún compromiso. Si el coste final por persona no resulta razonable, no se llevará adelante.</p>}
        <button className="primaryButton noticeCta" type="button" disabled={busy} onClick={()=>{if(isDemo||item.read_at)router.push(target);else void mark(item.id,target);}}>{cta}</button>
       </div>
       <div className="notificationActions">
