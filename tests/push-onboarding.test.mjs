@@ -15,6 +15,8 @@ test("dismissal and attempts persist per account in this browser; success can re
  Object.defineProperty(globalThis,"window",{configurable:true,value:new EventTarget()});
  writePushOnboarding("account-a",{failures:2,reason:"failed",dismissed:true});
  assert.equal(readPushOnboarding("account-a").dismissed,true);
+ values.delete("pasion-push-onboarding-state-v1:account-a");
+ assert.deepEqual(readPushOnboarding("account-a"),{failures:0},"Deleted browser data must not return the old dismissal");
  assert.deepEqual(readPushOnboarding("account-b"),{failures:0});
  writePushOnboarding("account-a",{failures:0});
  assert.equal(readPushOnboarding("account-a").dismissed,false);
