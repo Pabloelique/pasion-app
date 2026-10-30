@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 import {useDemoMode} from "@/lib/app-data";
+import {readPushOnboarding,writePushOnboarding,recordPushFailure,canDismissPush,type PushOnboarding} from "@/lib/push-onboarding";
 import {pushActivationError} from "@/lib/push-errors";
 
 function toBytes(base64:string){
@@ -15,17 +16,28 @@ function b64Url(buffer:ArrayBuffer|null){
  let str="";for(const b of bytes)str+=String.fromCharCode(b);
  return btoa(str).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
+async function withinLimit<T>(operation:PromiseLike<T>):Promise<T>{
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{return await Promise.race([Promise.resolve(operation),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error("La activación está tardando demasiado. Comprueba la conexión y reinténtalo.")),20000);})]);}
+ finally{clearTimeout(timer);}
+}
 function supported(){
  return typeof window!=="undefined"&&"serviceWorker" in navigator&&
  "PushManager" in window&&"Notification" in window;
 }
 
-export default function PushSettings({userId,required=false}:{userId:string;required?:boolean}){
+export default function PushSettings(props:{userId:string;required?:boolean}){
+ return <PushSettingsForAccount key={props.userId} {...props}/>;
+}
+function PushSettingsForAccount({userId,required=false}:{userId:string;required?:boolean}){
  const isDemo=useDemoMode();
  const [completed,setCompleted]=useState(false);
- const [unsupportedDismissed,setUnsupportedDismissed]=useState(false);
+ const [onboarding,setOnboarding]=useState<PushOnboarding>({failures:0});
+ const [initialized,setInitialized]=useState(false);
+ function save(value:PushOnboarding){writePushOnboarding(userId,value);setOnboarding(value);}
+ function dismiss(){save({...onboarding,dismissed:true});}
  const completionKey=`pasion-push-onboarding-v1:${userId}`;
- function remember(){try{localStorage.setItem(completionKey,"done");}catch{}setCompleted(true);}
+ function remember(){try{localStorage.setItem(completionKey,"done");}catch{}save({failures:0});setCompleted(true);}
  const [available,setAvailable]=useState<boolean|null>(null);
  const [enabled,setEnabled]=useState(false);
  const [busy,setBusy]=useState(false);
@@ -35,15 +47,19 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
  useEffect(()=>{
   if(isDemo){setAvailable(true);setInfo("Demostración: no se solicitan permisos ni se activan avisos reales.");return;}
   let mounted=true;
-  try{if(localStorage.getItem(completionKey)==="done")setCompleted(true);}catch{}
+  const sync=()=>{setOnboarding(readPushOnboarding(userId));try{setCompleted(localStorage.getItem(completionKey)==="done");}catch{}};
+  sync();setInitialized(true);
+  window.addEventListener("pasion-push-onboarding",sync);
+  window.addEventListener("storage",sync);
   async function check(){
    const yes=supported();
    if(!mounted)return;
    setAvailable(yes);
-   if(!yes)return;
+   if(!yes){setOnboarding(old=>({...old,reason:"unsupported"}));return;}
+   if(Notification.permission==="denied")setOnboarding(old=>({...old,reason:"denied"}));
    try{
-    const reg=await navigator.serviceWorker.register("/sw.js",{scope:"/"});
-    const sub=await reg.pushManager.getSubscription();
+    const reg=await withinLimit(navigator.serviceWorker.register("/sw.js",{scope:"/"}));
+    const sub=await withinLimit(reg.pushManager.getSubscription());
     if(!mounted)return;
     const active=Boolean(sub)&&Notification.permission==="granted";
     if(active&&sub){
@@ -58,7 +74,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
   void check();
   const recheck=()=>{if(document.visibilityState==="visible")void check();};
   window.addEventListener("focus",recheck);document.addEventListener("visibilitychange",recheck);
-  return()=>{mounted=false;window.removeEventListener("focus",recheck);document.removeEventListener("visibilitychange",recheck);};
+  return()=>{mounted=false;window.removeEventListener("pasion-push-onboarding",sync);window.removeEventListener("storage",sync);window.removeEventListener("focus",recheck);document.removeEventListener("visibilitychange",recheck);};
  },[isDemo,userId,completionKey]);
  async function activate(){
   if(isDemo||busy)return;
@@ -68,30 +84,35 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
    if(!publicKey)throw new Error("Falta configurar la clave pública de notificaciones en Vercel.");
    if(!supported())throw new Error("Este dispositivo no admite notificaciones push desde esta página.");
    phase="permiso";
-   const permission=await Notification.requestPermission();
+   const permission=await withinLimit(Notification.requestPermission());
    if(permission!=="granted")throw new Error("Activa el permiso de notificaciones en los ajustes del dispositivo.");
    phase="suscripción";
-   const reg=await navigator.serviceWorker.ready;
-   const existing=await reg.pushManager.getSubscription();
-   const sub=existing??await reg.pushManager.subscribe({
+   await withinLimit(navigator.serviceWorker.register("/sw.js",{scope:"/"}));
+   const reg=await withinLimit(navigator.serviceWorker.ready);
+   const existing=await withinLimit(reg.pushManager.getSubscription());
+   const sub=existing??await withinLimit(reg.pushManager.subscribe({
     userVisibleOnly:true,applicationServerKey:toBytes(publicKey)
-   });
+   }));
    const data=sub.toJSON();
    if(!data.endpoint||!data.keys?.p256dh||!data.keys?.auth)throw new Error("No se pudo preparar la suscripción.");
    phase="guardado";
    // La base de datos solo acepta suscripciones del usuario autenticado.
-   const {error:err}=await getSupabaseBrowser().from("push_subscriptions").upsert({
+   const {error:err}=await withinLimit(getSupabaseBrowser().from("push_subscriptions").upsert({
     user_id:userId,endpoint:data.endpoint,p256dh:data.keys.p256dh,auth_key:data.keys.auth,
     updated_at:new Date().toISOString()
-   },{onConflict:"user_id,endpoint"});
+   },{onConflict:"user_id,endpoint"}));
    if(err)throw err;
    setEnabled(true);remember();
    setInfo("Notificaciones activadas en este dispositivo.");
-  }catch(e){setError(pushActivationError(e,phase));}
+  }catch(e){
+   const reason=!supported()?"unsupported":Notification.permission==="denied"?"denied":"failed";
+   save(recordPushFailure(readPushOnboarding(userId),reason));
+   setError(pushActivationError(e,phase));
+  }
   finally{setBusy(false);}
  }
- if(!isDemo&&(enabled||(!required&&available===null)))return null;
- if(required&&(isDemo||completed||unsupportedDismissed))return null;
+ if(!isDemo&&!initialized)return null;
+ if(required&&(isDemo||completed||onboarding.dismissed))return null;
  const panel=<section className="notificationPanel" style={required?{maxWidth:760,margin:"0 auto"}:undefined}>
  {required&&<><h1>Activa los avisos de PASIÓN APP</h1><p>Antes de continuar, activa las notificaciones para enterarte de ensayos, cambios y comunicados de la agrupación. Solo tendrás que hacerlo una vez en este móvil.</p><p>Pulsa «Activar notificaciones push» y después «Permitir» cuando lo pregunte tu móvil.</p></>}
   <h2>Notificaciones al móvil</h2>
@@ -99,8 +120,10 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
   {available===null?<p className="muted">Comprobando compatibilidad…</p>:!available?
    <p className="muted">Este navegador no admite notificaciones push en este contexto. En iPhone usa Safari → Compartir → Añadir a pantalla de inicio y abre PASIÓN APP desde su icono. En Android, utiliza un navegador compatible.</p>:
    <div className="attendanceActions">
-    <button className="primaryButton" disabled={isDemo||busy} type="button" onClick={()=>void activate()}>{busy?"Activando…":"Activar notificaciones push"}</button>
+    <button className="primaryButton" disabled={isDemo||busy||enabled} type="button" onClick={()=>void activate()}>{busy?"Activando…":enabled?"Notificaciones activadas":onboarding.failures?"Reintentar activación":"Activar notificaciones push"}</button>
    </div>}
+  {!enabled&&onboarding.dismissed&&<p className="muted" role="status">Avisos al móvil pendientes en esta cuenta y navegador. No volveremos a pedirte la activación al entrar. Puedes reintentarlo aquí; la bandeja de entrada sigue disponible.</p>}
+  {!enabled&&available&&onboarding.reason==="denied"&&<p className="muted">El permiso está bloqueado. Permite las notificaciones en los ajustes del navegador o del móvil y vuelve a intentarlo.</p>}
   {enabled&&<p className="formSuccess">Permiso de notificaciones activo en este dispositivo.</p>}
   {info&&<p className="muted" role="status">{info}</p>}
   {error&&<p className="formError" role="alert">{error}</p>}
@@ -140,7 +163,7 @@ export default function PushSettings({userId,required=false}:{userId:string;requ
     <p className="muted">Aunque no actives los avisos al móvil, las novedades seguirán en tu bandeja de entrada. La entrega puede retrasarse según la conexión y los ajustes del dispositivo.</p>
    </details>
   </div>
- {required&&available===false&&<button type="button" className="secondaryButton" onClick={()=>setUnsupportedDismissed(true)}>Mi dispositivo no es compatible: continuar</button>}
+ {required&&canDismissPush(onboarding)&&<><p className="muted">Puedes continuar y consultar los avisos en la bandeja. No volveremos a pedirte la activación en esta cuenta y navegador; podrás reintentarlo desde Notificaciones.</p><button type="button" disabled={busy} className="secondaryButton" onClick={dismiss}>Continuar con la bandeja de avisos</button></>}
  </section>;
  return required?<dialog aria-label="Activar notificaciones" ref={node=>{if(node&&!node.open)node.showModal();}} onCancel={event=>event.preventDefault()} style={{position:"fixed",inset:0,width:"100%",maxWidth:"none",height:"100dvh",maxHeight:"none",margin:0,border:0,overflowY:"auto",background:"var(--page)",color:"var(--text)",padding:24}}>{panel}</dialog>:panel;
 }
