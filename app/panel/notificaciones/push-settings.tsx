@@ -37,7 +37,7 @@ function PushSettingsForAccount({userId,required=false}:{userId:string;required?
  function save(value:PushOnboarding){writePushOnboarding(userId,value);setOnboarding(value);}
  function dismiss(){save({...onboarding,dismissed:true});}
  const completionKey=`pasion-push-onboarding-v1:${userId}`;
- function remember(){try{localStorage.setItem(completionKey,"done");}catch{}save({failures:0});setCompleted(true);}
+ function remember(){try{localStorage.setItem(completionKey,"done");}catch{}save({failures:0});setCompleted(true);window.dispatchEvent(new CustomEvent("pasion-push-activated",{detail:userId}));}
  const [available,setAvailable]=useState<boolean|null>(null);
  const [enabled,setEnabled]=useState(false);
  const [busy,setBusy]=useState(false);
@@ -48,7 +48,11 @@ function PushSettingsForAccount({userId,required=false}:{userId:string;required?
   if(isDemo){setAvailable(true);setInfo("Demostración: no se solicitan permisos ni se activan avisos reales.");return;}
   let mounted=true;
   const sync=()=>{setOnboarding(readPushOnboarding(userId));try{setCompleted(localStorage.getItem(completionKey)==="done");}catch{}};
+  const activated=(event:Event)=>{
+   if((event as CustomEvent<string>).detail===userId){setEnabled(true);setCompleted(true);setError("");setInfo("Notificaciones activadas en este dispositivo.");}
+  };
   sync();setInitialized(true);
+  window.addEventListener("pasion-push-activated",activated);
   window.addEventListener("pasion-push-onboarding",sync);
   window.addEventListener("storage",sync);
   async function check(){
@@ -74,7 +78,7 @@ function PushSettingsForAccount({userId,required=false}:{userId:string;required?
   void check();
   const recheck=()=>{if(document.visibilityState==="visible")void check();};
   window.addEventListener("focus",recheck);document.addEventListener("visibilitychange",recheck);
-  return()=>{mounted=false;window.removeEventListener("pasion-push-onboarding",sync);window.removeEventListener("storage",sync);window.removeEventListener("focus",recheck);document.removeEventListener("visibilitychange",recheck);};
+  return()=>{mounted=false;window.removeEventListener("pasion-push-activated",activated);window.removeEventListener("pasion-push-onboarding",sync);window.removeEventListener("storage",sync);window.removeEventListener("focus",recheck);document.removeEventListener("visibilitychange",recheck);};
  },[isDemo,userId,completionKey]);
  async function activate(){
   if(isDemo||busy)return;
