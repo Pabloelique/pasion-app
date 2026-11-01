@@ -115,7 +115,7 @@ function PushSettingsForAccount({userId,required=false}:{userId:string;required?
   }
   finally{setBusy(false);}
  }
- if(!isDemo&&!initialized)return null;
+ if(isDemo||!initialized)return null;
  if(required&&(isDemo||completed||onboarding.dismissed))return null;
  const panel=<section className="notificationPanel" style={required?{maxWidth:760,margin:"0 auto"}:undefined}>
  {required&&<><h1>Activa los avisos de PASIÓN APP</h1><p>Antes de continuar, activa las notificaciones para enterarte de ensayos, cambios y comunicados de la agrupación. Solo tendrás que hacerlo una vez en este móvil.</p><p>Pulsa «Activar notificaciones push» y después «Permitir» cuando lo pregunte tu móvil.</p></>}

@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "@/lib/app-data";
-import {useAppDatabase} from "@/lib/app-data";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 type March={id:string;title:string;composer:string;youtube_url:string;spotify_url:string;notes:string;from_proposal:string|null;created_at:string};
 type Proposal={id:string;title:string;closed_at:string|null;closes_at:string;description:string};
 type Score={title:string};
@@ -23,6 +23,7 @@ function cleanTitle(title:string){
 }
 export default function Repertoire({role,userId}:{role:string;userId:string}){
  const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const manager=role==="directiva"||role==="superadmin";
  const [marches,setMarches]=useState<March[]>([]);
  const [proposals,setProposals]=useState<Proposal[]>([]);
@@ -93,8 +94,8 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>Repertorio oficial</h1></div></header>
-  <p className="muted">Todas las marchas que forman parte de nuestro repertorio, con enlaces a grabaciones para escucharlas y estudiarlas. Solo se muestran enlaces añadidos y comprobados por la directiva.</p>
-  <div className="repertoireStats"><div><strong>{marches.length}</strong><span>Marchas oficiales</span></div><div><strong>{marches.filter(m=>m.youtube_url).length}</strong><span>Con YouTube</span></div><div><strong>{marches.filter(m=>m.spotify_url).length}</strong><span>Con Spotify</span></div></div>
+  <p className="muted">{isDemo?"Obras reales utilizadas para mostrar cómo se consulta un repertorio. Esta selección no representa el repertorio de La Pasión.":"Todas las marchas que forman parte de nuestro repertorio, con enlaces a grabaciones para escucharlas y estudiarlas. Solo se muestran enlaces añadidos y comprobados por la directiva."}</p>
+  <div className="repertoireStats"><div><strong>{marches.length}</strong><span>{isDemo?"Obras de muestra":"Marchas oficiales"}</span></div><div><strong>{marches.filter(m=>m.youtube_url).length}</strong><span>Con YouTube</span></div><div><strong>{marches.filter(m=>m.spotify_url).length}</strong><span>Con Spotify</span></div></div>
   {manager&&<section className="repertoireCard">
     <h2>{editing?"Editar marcha":"Incorporar marcha"}</h2>
     <p className="muted small">Puedes elegir una marcha ya presente en las partituras, añadir una nueva o incorporar una propuesta con su votación finalizada. La inclusión es una decisión de la directiva, no automática.</p>
@@ -117,7 +118,7 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
     </form>
    </section>}
   <section className="repertoireCard">
-   <div className="repertoireHeader"><h2>Marchas de La Pasión</h2><Link href="/panel/votaciones" className="repertoireVotingLink">Ver votaciones →</Link></div>
+   <div className="repertoireHeader"><h2>{isDemo?"Selección musical de muestra":"Marchas de La Pasión"}</h2><Link href="/panel/votaciones" className="repertoireVotingLink">Ver votaciones →</Link></div>
    <label className="repertoireLabel">Buscar en el repertorio<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Marcha, compositor…"/></label>
    {error&&<p className="formError" role="alert">{error}</p>}
    {success&&<p className="formSuccess" role="status">{success}</p>}

@@ -11,7 +11,7 @@ export default async function PanelLayout({children}:{children:React.ReactNode})
  if(user){
   const {data:profile}=await db.from("profiles").select("role,approval_status").eq("id",user.id).single();
   if(profile?.role==="viewer")redirect("/demo");
-  approved=profile?.approval_status==="approved";
+  approved=profile?.approval_status==="approved"&&["musico","directiva","superadmin"].includes(profile.role);
  }
  return <>
   {approved&&user&&<PushSettings userId={user.id} required/>}
