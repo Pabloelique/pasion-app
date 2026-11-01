@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "@/lib/app-data";
 import ScoreStand from "./score-stand";
-import {useAppDatabase} from "@/lib/app-data";
+import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 type Score={id:string;title:string;musical_part_id:number;storage_path:string;mime_type:string;created_at:string};
 type Part={id:number;name:string};
 const types:Record<string,string>={"application/pdf":"PDF","image/jpeg":"Imagen JPEG","image/png":"Imagen PNG","image/webp":"Imagen WebP","audio/mpeg":"Audio MP3","audio/wav":"Audio WAV","audio/x-wav":"Audio WAV","audio/mp4":"Audio M4A","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"Word DOCX"};
@@ -24,6 +24,7 @@ function folderKey(name:string){
 const extensions:Record<string,string>={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","audio/mpeg":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/mp4":"m4a","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx"};
 export default function ScoreLibrary({role,partId}:{role:string;partId:number|null}){
  const db=useAppDatabase();
+ const isDemo=useDemoMode();
  const canUpload=role==="superadmin"||role==="directiva";
  const [parts,setParts]=useState<Part[]>([]);
  const [scores,setScores]=useState<Score[]>([]);
@@ -109,7 +110,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  return <main className="container">
   <Link href="/panel" className="backLink">← Volver al panel</Link>
   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Biblioteca de partituras</h1></div></header>
-  <p className="muted">{canUpload?"Consulta todos los hilos y sube nuevos materiales musicales.":"Consulta los materiales de tu hilo musical. Los archivos son privados."}</p>
+  <p className="muted">{isDemo?"Prueba el modo atril con una versión didáctica de una melodía real de Beethoven. No contiene partituras de la agrupación.":canUpload?"Consulta todos los hilos y sube nuevos materiales musicales.":"Consulta los materiales de tu hilo musical. Los archivos son privados."}</p>
   {role==="superadmin"&&<p className="notice"><strong>Importación masiva desde Drive</strong><p>Importa todas las marchas de una carpeta, con control de duplicados y guiones restringidos a directiva.</p><Link href="/panel/partituras/importar" className="primaryButton linkButton">Abrir importador masivo →</Link></p>}{canUpload&&<section className="scoreUpload"><h2>Añadir material</h2><form onSubmit={e=>void upload(e)} className="scoreForm">
    <label>Título de la marcha o material<input value={name} onChange={e=>setName(e.target.value)} maxLength={160} placeholder="Ej. La Pasión — Corneta 1" required/></label>
    <label>Hilo musical<select value={uploadPart} onChange={e=>setUploadPart(e.target.value)} required>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>

@@ -69,7 +69,7 @@ export default function Notifications({userId}:{userId:string}){
  return <main className="container">
   <Link className="backLink" href="/panel">← Volver al panel</Link>
   <header className="header"><span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN</small><h1>Notificaciones</h1></div></header>
-  <p className="muted">Avisos sobre ensayos, actuaciones, comunicados y votaciones. Activa las notificaciones push para recibirlos también fuera de PASIÓN APP.</p>
+  <p className="muted">{isDemo?"Bandeja de avisos de muestra. Puedes consultarlos sin activar notificaciones en tu dispositivo.":"Avisos sobre ensayos, actuaciones, comunicados y votaciones. Activa las notificaciones push para recibirlos también fuera de PASIÓN APP."}</p>
   <PushSettings userId={userId}/>
   <section className="notificationPanel">
    <div className="notificationToolbar">
