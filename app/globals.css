@@ -168,3 +168,58 @@ html[data-theme="light"] .formSuccess{color:#235b33}
 .outsideHeading{margin:28px 0 12px;padding-top:18px;border-top:2px dashed var(--border)}.outsideHeading h2{margin:0 0 4px}
 .marchFolder.outside{opacity:.92;border-style:dashed}
 .checkLabel{display:flex!important;gap:8px;align-items:flex-start;font-size:14px}.checkLabel input{margin-top:3px;width:auto}
+/* Desplegables (nov. 2026): carpetas de partituras, selectores y <details> */
+.folderSection{margin-top:22px}
+.folderSectionHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin-bottom:4px}
+.folderSectionHead h2{margin:0;font-size:19px}
+.folderSectionHead p{flex-basis:100%;margin:0}
+.folderSectionHead.outside{margin-top:30px;padding-top:20px;border-top:2px dashed var(--border)}
+.folderCount{font-size:12px;font-weight:700;color:var(--accent);background:var(--surface-alt);border:1px solid var(--border);border-radius:999px;padding:3px 10px}
+.marchFolderGrid{display:grid;gap:10px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));align-items:start}
+.marchFolder{border:1px solid var(--border);background:var(--surface);border-radius:16px;overflow:hidden;transition:border-color .2s,box-shadow .2s,transform .15s}
+.marchFolder:hover{border-color:var(--accent)}
+.marchFolder.open{border-color:var(--accent);box-shadow:0 8px 24px #0003}
+.marchFolder.outside{opacity:1;border-style:dashed}
+.marchFolderHeader{display:flex;width:100%;align-items:center;gap:14px;padding:14px 16px;background:transparent;color:var(--text);text-align:left;border:0;cursor:pointer;font:inherit}
+.marchFolderHeader:hover{background:transparent}
+.marchFolderHeader:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:16px}
+.marchFolderIcon{flex-shrink:0;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--border);color:var(--accent);font-size:20px;font-weight:800;font-family:Georgia,serif}
+.marchFolder.open .marchFolderIcon{background:var(--accent);color:var(--button-text,#fff);border-color:var(--accent)}
+.marchFolderText{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0}
+.marchFolderText strong{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.marchChips{display:flex;flex-wrap:wrap;gap:5px}
+.marchChip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-alt);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.marchChip.score{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--border))}
+.marchChevron{flex-shrink:0;font-size:26px;line-height:1;color:var(--muted);transition:transform .25s ease,color .2s}
+.marchFolder.open .marchChevron{transform:rotate(90deg);color:var(--accent)}
+.marchFolderBody{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.marchFolder.open .marchFolderBody{grid-template-rows:1fr}
+.marchFolderContents{overflow:hidden;display:grid;gap:6px;padding:0 12px}
+.marchFolder.open .marchFolderContents{padding:0 12px 12px}
+.marchFile{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--border)}
+.marchFile>div{flex:1;min-width:0;display:grid;gap:2px}
+.marchFile strong{font-size:14px}
+.marchFile small{font-size:12px;color:var(--muted)}
+.marchFile button{flex-shrink:0;min-height:40px;padding:8px 14px}
+.marchFileIcon{flex-shrink:0;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--surface);color:var(--accent);font-size:17px}
+.marchFile.audio .marchFileIcon{color:#5aa9e6}.marchFile.sibelius .marchFileIcon{color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.marchFolderBody,.marchChevron,.marchFolder{transition:none}}
+
+/* Selectores con flecha propia, iguales en toda la app */
+select{-webkit-appearance:none;appearance:none;padding-right:42px!important;cursor:pointer;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+ background-repeat:no-repeat!important;background-position:right 14px center!important;background-size:14px 9px!important;transition:border-color .15s,box-shadow .15s}
+select:hover{border-color:var(--accent)}
+select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+select:disabled{opacity:.6;cursor:not-allowed}
+
+/* <details> como tarjeta desplegable */
+details{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+details>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;cursor:pointer;font-weight:600}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"›";font-size:22px;line-height:1;color:var(--muted);transition:transform .25s ease}
+details[open]>summary::after{transform:rotate(90deg);color:var(--accent)}
+details[open]>summary{border-bottom:1px solid var(--border)}
+details>:not(summary){margin-left:16px;margin-right:16px}
+details>:last-child:not(summary){margin-bottom:14px}
+details:hover{border-color:var(--accent)}
