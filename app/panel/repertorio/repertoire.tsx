@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "@/lib/app-data";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
+import Select from "@/components/app-select";
 type March={id:string;title:string;composer:string;youtube_url:string;spotify_url:string;notes:string;from_proposal:string|null;created_at:string};
 type Proposal={id:string;title:string;closed_at:string|null;closes_at:string;description:string};
 type Score={title:string};
@@ -99,7 +100,7 @@ export default function Repertoire({role,userId}:{role:string;userId:string}){
   {manager&&<section className="repertoireCard">
     <h2>{editing?"Editar marcha":"Incorporar marcha"}</h2>
     <p className="muted small">Puedes elegir una marcha ya presente en las partituras, añadir una nueva o incorporar una propuesta con su votación finalizada. La inclusión es una decisión de la directiva, no automática.</p>
-    {!editing&&<label className="repertoireLabel">Propuesta de votación finalizada<select value={source} onChange={e=>chooseProposal(e.target.value)}><option value="">Ninguna · añadir directamente</option>{pending.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>}
+    {!editing&&<label className="repertoireLabel">Propuesta de votación finalizada<Select value={source} onChange={e=>chooseProposal(e.target.value)}><option value="">Ninguna · añadir directamente</option>{pending.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</Select></label>}
     {!editing&&candidates.length>0&&<div className="repertoireCandidates">
      <button type="button" className="secondaryButton" onClick={()=>setShowCandidates(v=>!v)}>Revisar {candidates.length} marchas de la biblioteca</button>
      {showCandidates&&<div className="repertoireCandidateList">

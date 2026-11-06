@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 type Event={id:string;title:string;event_type:string;starts_at:string;cancelled_at:string|null};
 type Member={member_id:string;member_name:string;part_name:string;response:string|null;justification:string|null;attendance:string|null;note:string|null};
 type Audit={audit_id:number;member_name:string;actor_name:string;previous_status:string|null;current_status:string;previous_note:string|null;current_note:string|null;changed_at:string};
@@ -66,9 +67,9 @@ export default function AttendanceBoard(){
   <header className="header"><span className="brandIcon">✓</span><div><small>DIRECTIVA · LA PASIÓN DE MAZARRÓN</small><h1>Pasar lista</h1></div></header>
   <p className="muted">Solo aparecen los músicos convocados al evento. En un ensayo de cornetas, la lista incluye únicamente a los cornetas. Los ensayos cancelados no permiten pasar lista.</p>
   <section className="attendanceSelect">
-   <label>Evento<select value={eventId} onChange={e=>{setEventId(e.target.value);setEditing(null);setSuccess("");}}>
+   <label>Evento<Select value={eventId} onChange={e=>{setEventId(e.target.value);setEditing(null);setSuccess("");}}>
     {events.length===0?<option value="">No hay eventos disponibles</option>:events.map(e=><option value={e.id} key={e.id}>{e.title} · {dateFormat.format(new Date(e.starts_at))}</option>)}
-   </select></label>
+   </Select></label>
    <label>Buscar músico<input value={filter} placeholder="Nombre o instrumento" onChange={e=>setFilter(e.target.value)}/></label>
   </section>
   {error&&<p className="formError" role="alert">{error}</p>}
@@ -81,7 +82,7 @@ export default function AttendanceBoard(){
       <p className="muted small">Asistencia real: <b>{p.attendance?labels[p.attendance]: "Sin registrar"}</b>{p.note?" · "+p.note:""}</p>
      </div>
      {editing===p.member_id?<div className="attendanceEdit">
-      <label>Resultado<select value={state} onChange={e=>setState(e.target.value)}><option value="presente">Presente</option><option value="ausente">Ausente</option><option value="justificada">Ausencia justificada</option></select></label>
+      <label>Resultado<Select value={state} onChange={e=>setState(e.target.value)}><option value="presente">Presente</option><option value="ausente">Ausente</option><option value="justificada">Ausencia justificada</option></Select></label>
       <label>Nota de directiva<textarea rows={2} maxLength={1000} placeholder="Opcional" value={note} onChange={e=>setNote(e.target.value)}/></label>
       <div className="attendanceActions"><button className="primaryButton" disabled={busy===p.member_id} onClick={()=>void save(p)}>{busy===p.member_id?"Guardando…":"Guardar"}</button><button className="secondaryButton" disabled={busy===p.member_id} onClick={()=>setEditing(null)}>Cancelar</button></div>
      </div>:<button className="secondaryButton" onClick={()=>edit(p)}>{p.attendance?"Corregir":"Pasar lista"}</button>}

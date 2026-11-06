@@ -5,6 +5,7 @@ import Link from "@/lib/app-data";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {validId} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
+import Select from "@/components/app-select";
 type Event={id:string;title:string;event_type:string;description:string;location:string;starts_at:string;ends_at:string;cancelled_at:string|null};
 type Response={event_id:string;response:string;justification:string|null};
 type Part={id:number;name:string};
@@ -140,7 +141,7 @@ export default function BandCalendar({role}:{role:string}){
   {manager&&<div className="attendanceActions"><button className="primaryButton" type="button" onClick={()=>{setCreating(!creating);setError("");}}>+ Crear evento</button><Link href="/panel/asistencia" className="secondaryButton linkButton">Pasar lista →</Link></div>}
   {creating&&<section className="calendarForm"><h2>Nuevo evento</h2><form className="scoreForm" onSubmit={e=>void create(e)}>
    <label>Título<input required minLength={3} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Ensayo general"/></label>
-   <label>Tipo<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
+   <label>Tipo<Select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></label>
    {kind==="ensayo"&&<fieldset className="rehearsalTargets"><legend>¿A quién va dirigido este ensayo?</legend><p className="muted small">Sin seleccionar ningún hilo: ensayo general para toda la banda. Puedes seleccionar uno o varios hilos.</p><div className="familyChecks">{groupParts(parts).map(f=>{const all=f.parts.every(p=>targetParts.includes(p.id));return <div className="familyCheck" key={f.key}>
     <div className="familyCheckHead"><span><span aria-hidden="true">{f.icon}</span> {f.name}</span><button type="button" className="familyToggle" onClick={()=>setTargetParts(old=>all?old.filter(id=>!f.parts.some(p=>p.id===id)):[...new Set([...old,...f.parts.map(p=>p.id)])])}>{all?"Quitar todos":"Todos"}</button></div>
     <div className="familyCheckOptions">{f.parts.map(p=><label key={p.id} className={targetParts.includes(p.id)?"on":""}><input type="checkbox" checked={targetParts.includes(p.id)} onChange={e=>setTargetParts(old=>e.target.checked?[...old,p.id]:old.filter(id=>id!==p.id))}/>{p.name}</label>)}</div>

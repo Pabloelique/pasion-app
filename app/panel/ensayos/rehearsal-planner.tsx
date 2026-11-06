@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "@/lib/app-data";
 import {useAppDatabase} from "@/lib/app-data";
+import Select from "@/components/app-select";
 type Event={id:string;title:string;starts_at:string;ends_at:string;location:string};
 type Piece={id:string;event_id:string;march_title:string;objective:string;progress:string;position:number};
 type Score={title:string};
@@ -75,9 +76,9 @@ export default function RehearsalPlanner({role,userId}:{role:string;userId:strin
   <p className="muted">Prepara el repertorio de cada ensayo y consulta el progreso de las marchas. Los archivos siguen protegidos en la biblioteca de partituras.</p>
   <section className="rehearsalCard">
    <div className="rehearsalHead"><h2>Seleccionar ensayo</h2><Link href="/panel/calendario" className="secondaryButton linkButton">Calendario</Link></div>
-   <label className="rehearsalLabel">Ensayo del calendario<select value={eventId} onChange={e=>{setEventId(e.target.value);setFilter("");setError("");}}>
+   <label className="rehearsalLabel">Ensayo del calendario<Select value={eventId} onChange={e=>{setEventId(e.target.value);setFilter("");setError("");}}>
     {events.length===0?<option value="">Todavía no hay ensayos creados</option>:events.map(ev=><option value={ev.id} key={ev.id}>{ev.title} · {new Date(ev.starts_at).toLocaleDateString("es-ES")}</option>)}
-   </select></label>
+   </Select></label>
    {current&&<p className="muted">{dateFormat.format(new Date(current.starts_at))}{current.location?" · "+current.location:""}</p>}
    {current&&<p className="rehearsalSummary">{all.length} marchas planificadas · {ready} preparadas para actuar</p>}
   </section>
@@ -99,7 +100,7 @@ export default function RehearsalPlanner({role,userId}:{role:string;userId:strin
       <div><strong>{p.march_title}</strong><p className="muted small">{p.objective||"Sin objetivo específico"}</p>
        <Link href="/panel/partituras" className="rehearsalLink">Consultar biblioteca de partituras</Link>
       </div>
-      <div className="rehearsalControls">{canManage?<label className="rehearsalLabel">Progreso<select disabled={busy!==null} value={p.progress} onChange={e=>void change(p,e.target.value)}>{Object.entries(stages).map(([v,t])=><option key={v} value={v}>{t}</option>)}</select></label>:<span className="rehearsalStage">{stages[p.progress]??p.progress}</span>}
+      <div className="rehearsalControls">{canManage?<label className="rehearsalLabel">Progreso<Select disabled={busy!==null} value={p.progress} onChange={e=>void change(p,e.target.value)}>{Object.entries(stages).map(([v,t])=><option key={v} value={v}>{t}</option>)}</Select></label>:<span className="rehearsalStage">{stages[p.progress]??p.progress}</span>}
        {canManage&&<button type="button" disabled={busy!==null} className="rehearsalRemove" onClick={()=>void remove(p)}>Quitar del ensayo</button>}
       </div>
     </article>)}
