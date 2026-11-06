@@ -4,6 +4,7 @@ import {getSupabaseServer} from "@/lib/supabase/server";
 import LogoutButton from "./salir";
 import MusicianDashboard from "./musician-dashboard";
 import DashboardExtras from "./dashboard-extras";
+import ProfileButton from "./perfil/profile-button";
 
 export const dynamic="force-dynamic";
 
@@ -21,6 +22,8 @@ const shortcuts=[
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
  {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
  {href:"/panel/afinador",icon:"♩",name:"Afinador y metrónomo",detail:"Afina según tu instrumento"},
+ {href:"/panel/perfil",icon:"☺",name:"Mi perfil",detail:"Foto, marcha favorita y redes"},
+ {href:"/panel/componentes",icon:"♙",name:"Componentes",detail:"Conoce a tus compañeros"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
  {href:"/panel/votaciones",icon:"◉",name:"Votación de nuevas marchas",detail:"Propuestas de nuevas marchas"},
@@ -77,7 +80,7 @@ export default async function PanelPage(){
  return <main className="container dashboard">
   <header className="header dashboardHeader">
    <span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
-   <div className="dashboardHeaderActions"><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">{profile.role==="superadmin"?"Superadmin":manager?"Directiva":"Músico"}</span></div>
+   <div className="dashboardHeaderActions"><ProfileButton/><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">{profile.role==="superadmin"?"Superadmin":manager?"Directiva":"Músico"}</span></div>
   </header>
   <section className="dashboardWelcome">
    <span className="eyebrow">TU CENTRO DE CONTROL</span>

@@ -1,7 +1,8 @@
 "use client";
-import Link from "@/lib/app-data";
+import Link,{useDemoMode} from "@/lib/app-data";
 import LogoutButton from "./salir";
 import DashboardExtras from "./dashboard-extras";
+import ProfileButton from "./perfil/profile-button";
 type EventItem={id:string;title:string;event_type:string;location:string;starts_at:string};
 type PostItem={id:string;title:string;content:string;priority:string;created_at:string};
 type ResponseItem={event_id:string;response:string};
@@ -16,6 +17,8 @@ const shortcuts=[
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
  {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
  {href:"/panel/afinador",icon:"♩",name:"Afinador y metrónomo",detail:"Afina según tu instrumento"},
+ {href:"/panel/perfil",icon:"☺",name:"Mi perfil",detail:"Foto, marcha favorita y redes"},
+ {href:"/panel/componentes",icon:"♙",name:"Componentes",detail:"Conoce a tus compañeros"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
  {href:"/panel/votaciones",icon:"◉",name:"Votación de nuevas marchas",detail:"Propuestas de nuevas marchas"},
@@ -24,12 +27,13 @@ const shortcuts=[
 
 type Props={profile:{first_name:string};events:EventItem[];posts:PostItem[];responseItems:ResponseItem[];openVotes:number|null;unread:number|null;eventsError:boolean;postsError:boolean;issues:boolean;canReviewAbsences?:boolean};
 export default function MusicianDashboard({profile,events,posts,responseItems,openVotes,unread,eventsError,postsError,issues,canReviewAbsences=false}:Props){
+ const demo=useDemoMode();
  const responses=new Map(responseItems.map(x=>[x.event_id,x.response]));
  const important=posts.filter(p=>p.priority==="importante");
  return <main className="container dashboard">
   <header className="header dashboardHeader">
    <span className="brandIcon"><img src="/icons/logo-192.png" alt="Escudo de La Pasión de Mazarrón" width={54} height={54}/></span><div><small>AGRUPACIÓN MUSICAL LA PASIÓN DE MAZARRÓN</small><h1>PASIÓN APP</h1></div>
-   <div className="dashboardHeaderActions"><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">Músico</span></div>
+   <div className="dashboardHeaderActions"><ProfileButton/><Link href="/panel/notificaciones" className="dashboardBell" aria-label={unread===null?"Abrir notificaciones":unread+" notificaciones sin leer"}><span aria-hidden="true">♧</span>{unread!==null&&unread>0&&<span className="dashboardBellCount">{unread>99?"99+":unread}</span>}</Link><span className="dashboardRole">Músico</span></div>
   </header>
   <section className="dashboardWelcome">
    <span className="eyebrow">TU CENTRO DE CONTROL</span>
@@ -71,7 +75,7 @@ export default function MusicianDashboard({profile,events,posts,responseItems,op
   
   <section className="dashboardLinks">
    <div className="dashboardSectionHead"><h2>Tu espacio</h2></div>
-   <div className="dashboardLinkGrid">{[...shortcuts,...(canReviewAbsences?[{href:"/panel/justificaciones",icon:"✓",name:"Justificaciones",detail:"Avisos privados de ausencia"}]:[])].map(item=><Link key={item.href} href={item.href} className="dashboardLink">
+   <div className="dashboardLinkGrid">{[...shortcuts.filter(s=>!demo||!["/panel/perfil","/panel/componentes"].includes(s.href)),...(canReviewAbsences?[{href:"/panel/justificaciones",icon:"✓",name:"Justificaciones",detail:"Avisos privados de ausencia"}]:[])].map(item=><Link key={item.href} href={item.href} className="dashboardLink">
     <span className="dashboardLinkIcon">{item.icon}</span><strong>{item.name}</strong><small>{item.detail}</small>
    </Link>)}</div>
   </section>

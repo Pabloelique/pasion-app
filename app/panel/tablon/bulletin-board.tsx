@@ -125,12 +125,12 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
      <div className="boardPostTop"><span className={post.priority==="importante"?"boardPriority important":"boardPriority"}>{birthday?"🎂 CUMPLEAÑOS":post.priority==="importante"?"IMPORTANTE":"Comunicado"}</span><span className="muted small">{date.format(new Date(post.created_at))}</span></div>
      <h3>{post.title}</h3><p className="boardBody">{post.content}</p>
      {postLink&&<Link className="primaryButton linkButton noticeCta" href={postLink}>{actionLabel(postLink)}</Link>}
-     <p className="muted small">{birthday?"Publicado automáticamente por PASIÓN APP":"Publicado por "+(names.get(post.author_id)||"Directiva")}</p>
+     <p className="muted small">{birthday?<>Publicado automáticamente por PASIÓN APP · {!isDemo&&post.birthday_user_id?<Link href={"/panel/componentes#miembro-"+post.birthday_user_id}>Ver su perfil</Link>:null}</>:<>Publicado por {isDemo?(names.get(post.author_id)||"Directiva"):<Link href={"/panel/componentes#miembro-"+post.author_id}>{names.get(post.author_id)||"Directiva"}</Link>}</>}</p>
      <button className="boardCommentsButton" type="button" onClick={()=>setExpanded(open?"":post.id)}>{open?"Ocultar conversación":birthday?"Ver felicitaciones":"Ver conversación"} · {replies.length} {birthday?"felicitaciones":"mensajes"}</button>
      {isBoard&&<div className="attendanceActions"><button className="secondaryButton" type="button" disabled={busy} onClick={()=>void removePost(post)}>Eliminar anuncio</button></div>}
      {open&&<div className="boardThread">
       {replies.length===0?<p className="muted small">Todavía no hay mensajes.</p>:replies.map(reply=><div className="boardReply" key={reply.id}>
-       <div className="boardReplyHeading"><strong>{names.get(reply.author_id)||"Miembro"}</strong><span className="muted small">{date.format(new Date(reply.created_at))}</span></div>
+       <div className="boardReplyHeading"><strong>{isDemo?(names.get(reply.author_id)||"Miembro"):<Link href={"/panel/componentes#miembro-"+reply.author_id}>{names.get(reply.author_id)||"Miembro"}</Link>}</strong><span className="muted small">{date.format(new Date(reply.created_at))}</span></div>
        <p>{reply.content}</p>
       </div>)}
       <form onSubmit={e=>{e.preventDefault();void sendComment(post.id);}} className="boardReplyForm">

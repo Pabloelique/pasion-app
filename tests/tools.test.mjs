@@ -71,3 +71,16 @@ test('Semana Santa dates and countdown',()=>{
  assert.equal(holy.semanaSantaCountdown(new Date('2027-03-26T12:00:00Z')).state,'during');
  assert.equal(holy.semanaSantaCountdown(new Date('2027-04-05T12:00:00Z')).year,2028);
 });
+
+test('social handles accept @user, plain user or full profile links',()=>{
+ const p=load('profile-utils');
+ assert.equal(p.cleanHandle('instagram','@la.pasion_mzr'),'la.pasion_mzr');
+ assert.equal(p.cleanHandle('instagram','https://www.instagram.com/lapasion/?hl=es'),'lapasion');
+ assert.equal(p.cleanHandle('tiktok','https://www.tiktok.com/@banda.pasion'),'banda.pasion');
+ assert.equal(p.cleanHandle('facebook','facebook.com/agrupacion.pasion'),'agrupacion.pasion');
+ assert.equal(p.cleanHandle('instagram',''),'');
+ assert.equal(p.cleanHandle('instagram','con espacios'),null);
+ assert.equal(p.cleanHandle('instagram','https://evil.com/usuario'),null);
+ assert.equal(p.initials('pablo','jiménez'),'PJ');
+ assert.equal(p.socialUrl('tiktok','x.y'),'https://www.tiktok.com/@x.y');
+});
