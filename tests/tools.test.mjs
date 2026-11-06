@@ -48,6 +48,19 @@ test('pitch detection finds a pure tone within a few cents',()=>{
  assert.equal(tuning.detectPitch(new Float32Array(4096),rate),-1);
 });
 
+test('pitch detection handles brass timbres, low tubas and quiet microphones',()=>{
+ const rate=48000,buffer=new Float32Array(4096);
+ for(const hz of [41.2,58.27,87.31,174.6,349.2,698.5,932.3]){
+  for(const amp of [0.01,0.1,0.6]){
+   for(let i=0;i<buffer.length;i++){const x=2*Math.PI*hz*i/rate;buffer[i]=amp*(0.5*Math.sin(x)+0.9*Math.sin(2*x)+0.6*Math.sin(3*x)+0.4*Math.sin(4*x))/2+amp*0.15*(Math.random()*2-1);}
+   const found=tuning.detectPitch(buffer,rate);
+   assert.ok(found>0&&Math.abs(1200*Math.log2(found/hz))<10,`${hz} Hz a ${amp} → ${found}`);
+  }
+ }
+ for(let i=0;i<buffer.length;i++)buffer[i]=0.05*(Math.random()*2-1);
+ assert.equal(tuning.detectPitch(buffer,rate),-1);
+});
+
 test('Semana Santa dates and countdown',()=>{
  assert.deepEqual(holy.easterSunday(2027),{year:2027,month:3,day:28});
  assert.deepEqual(holy.easterSunday(2028),{year:2028,month:4,day:16});

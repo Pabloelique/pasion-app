@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {INSTRUMENTS,TRANSPOSITIONS,detectPitch,midiToFrequency,noteName,presetForPart,readPitch,type Notation,type Reading} from "@/lib/tuning";
+import {INSTRUMENTS,TRANSPOSITIONS,detectPitchDetailed,midiToFrequency,noteName,presetForPart,readPitch,type Notation,type Reading} from "@/lib/tuning";
 
 type Settings={instrument:string;transposition:string;a4:number;notation:Notation};
 const KEY="pasion-tuner-v1";
@@ -23,7 +23,8 @@ export default function Tuner({partName}:{partName:string|null}){
  const [reading,setReading]=useState<Reading|null>(null);
  const [error,setError]=useState("");
  const [playing,setPlaying]=useState<string|null>(null);
- const audio=useRef<{ctx:AudioContext;stream:MediaStream;frame:number}|null>(null);
+ const audio=useRef<{ctx:AudioContext;stream:MediaStream;timer:number}|null>(null);
+ const [level,setLevel]=useState(0);
  const tone=useRef<{ctx:AudioContext;osc:OscillatorNode}|null>(null);
  const history=useRef<number[]>([]);
  const current=useRef<Settings|null>(null);
@@ -39,34 +40,51 @@ export default function Tuner({partName}:{partName:string|null}){
  }
  async function startListening(){
   setError("");
-  if(!navigator.mediaDevices?.getUserMedia){setError("Este navegador no permite usar el micrófono.");return;}
+  if(!navigator.mediaDevices?.getUserMedia){setError("Este navegador no permite usar el micrófono. En iPhone abre PASIÓN APP desde Safari o desde el icono de la pantalla de inicio.");return;}
+  // En iPhone el audio debe crearse en el mismo toque del botón, antes de cualquier espera.
+  const Ctor=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext;
+  const ctx=new Ctor();
+  void ctx.resume();
+  let stream:MediaStream;
   try{
-   const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-   const Ctor=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext;
-   const ctx=new Ctor();await ctx.resume();
-   const analyser=ctx.createAnalyser();analyser.fftSize=4096;
-   ctx.createMediaStreamSource(stream).connect(analyser);
-   const buffer=new Float32Array(analyser.fftSize);
-   const loop=()=>{
-    analyser.getFloatTimeDomainData(buffer);
-    const hz=detectPitch(buffer,ctx.sampleRate);
-    if(hz>0){
-     // Mediana de las últimas lecturas para que la aguja no baile.
-     const list=[...history.current,hz].slice(-5);history.current=list;
-     const median=[...list].sort((a,b)=>a-b)[Math.floor(list.length/2)];
-     const now=current.current;
-     if(now)setReading(readPitch(median,now.a4,TRANSPOSITIONS.find(x=>x.id===now.transposition)!.semitones));
-    }
-    if(audio.current)audio.current.frame=requestAnimationFrame(loop);
-   };
-   audio.current={ctx,stream,frame:requestAnimationFrame(loop)};
-   setListening(true);
-  }catch{setError("No se ha podido usar el micrófono. Revisa el permiso del navegador para PASIÓN APP.");}
+   stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch{
+   void ctx.close();
+   setError("No se ha podido usar el micrófono. Permite el acceso al micrófono para PASIÓN APP en los ajustes del navegador y vuelve a intentarlo.");
+   return;
+  }
+  await ctx.resume().catch(()=>{});
+  const source=ctx.createMediaStreamSource(stream);
+  const analyser=ctx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
+  // Salida a volumen cero: algunos Safari no procesan el micrófono si no llega al altavoz.
+  const mute=ctx.createGain();mute.gain.value=0;
+  source.connect(analyser);analyser.connect(mute).connect(ctx.destination);
+  const buffer=new Float32Array(analyser.fftSize);
+  let lastHeard=0;
+  const analyse=()=>{
+   analyser.getFloatTimeDomainData(buffer);
+   let peak=0;for(let i=0;i<buffer.length;i+=8)peak=Math.max(peak,Math.abs(buffer[i]));
+   setLevel(Math.min(1,peak*4));
+   const found=detectPitchDetailed(buffer,ctx.sampleRate);
+   const now=performance.now();
+   if(found){
+    lastHeard=now;
+    // Mediana de las últimas lecturas para que la aguja no baile; si cambias de nota, se reinicia.
+    const prev=history.current[history.current.length-1];
+    const list=prev&&Math.abs(1200*Math.log2(found.hz/prev))>80?[found.hz]:[...history.current,found.hz].slice(-5);
+    history.current=list;
+    const median=[...list].sort((a,b)=>a-b)[Math.floor(list.length/2)];
+    const cfg=current.current;
+    if(cfg)setReading(readPitch(median,cfg.a4,TRANSPOSITIONS.find(x=>x.id===cfg.transposition)!.semitones));
+   }else if(now-lastHeard>900){history.current=[];setReading(null);}
+  };
+  audio.current={ctx,stream,timer:window.setInterval(analyse,50)};
+  setListening(true);
  }
  function stopListening(){
   const a=audio.current;audio.current=null;
-  if(a){cancelAnimationFrame(a.frame);a.stream.getTracks().forEach(t=>t.stop());void a.ctx.close();}
-  history.current=[];setListening(false);setReading(null);
+  if(a){window.clearInterval(a.timer);a.stream.getTracks().forEach(t=>t.stop());void a.ctx.close();}
+  history.current=[];setListening(false);setReading(null);setLevel(0);
  }
  function stopTone(){const t=tone.current;tone.current=null;if(t){t.osc.stop();void t.ctx.close();}setPlaying(null);}
  async function playTone(id:string,concertMidi:number){
@@ -83,7 +101,7 @@ export default function Tuner({partName}:{partName:string|null}){
  const concert=reading?noteName(reading.concertMidi,settings.notation):null;
  const cents=reading?.cents??0;
  const inTune=reading!==null&&Math.abs(cents)<=5;
- const verdict=!reading?"Toca una nota larga":inTune?"¡Afinado!":cents>0?"Estás alto · baja un poco":"Estás bajo · sube un poco";
+ const verdict=!reading?(listening?"Escuchando… toca una nota larga":"Pulsa «Empezar a afinar»"):inTune?"¡Afinado!":cents>0?"Estás alto · baja un poco":"Estás bajo · sube un poco";
  // Notas de afinación habituales: Si♭ y La reales.
  const references=[{id:"sib",label:"Si♭ real",midi:70},{id:"la",label:"La real",midi:69},{id:"fa",label:"Fa real",midi:65}];
  return <section className="tuner">
@@ -110,6 +128,7 @@ export default function Tuner({partName}:{partName:string|null}){
     <span className="tunerNeedle" style={{left:`calc(${50+Math.max(-50,Math.min(50,cents))}% - 2px)`}}/>
    </div>
    <span className="tunerVerdict">{verdict}</span>
+   {listening&&<span className="tunerLevel" aria-hidden="true"><i style={{width:Math.round(level*100)+"%"}}/></span>}
    <span className="muted small">{reading&&concert?`Suena: ${concert.name}${concert.octave} real · ${reading.hz.toFixed(1)} Hz · ${cents>0?"+":""}${cents} cents`:"El afinador escucha por el micrófono del móvil."}</span>
   </div>
   {error&&<p role="alert" className="formError">{error}</p>}

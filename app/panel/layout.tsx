@@ -23,6 +23,7 @@ export default async function PanelLayout({children}:{children:React.ReactNode})
    <Link href="/panel"><span aria-hidden="true">⌂</span><span>Inicio</span></Link>
    <Link href="/panel/calendario"><span aria-hidden="true">▦</span><span>Calendario</span></Link>
    <Link href="/panel/partituras"><span aria-hidden="true">♫</span><span>Partituras</span></Link>
+   <Link href="/panel/afinador"><span aria-hidden="true">♩</span><span>Afinador</span></Link>
    <Link href="/panel/notificaciones"><span aria-hidden="true">♧</span><span>Avisos</span></Link>
   </nav>}
  </>;
