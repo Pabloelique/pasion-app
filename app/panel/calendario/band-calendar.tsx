@@ -40,6 +40,15 @@ export default function BandCalendar({role}:{role:string}){
  const [details,setDetails]=useState("");
  const [reply,setReply]=useState("");
  const [reason,setReason]=useState("");
+ // Desde la notificación «No podré ir» se abre el evento con la ausencia ya marcada.
+ const [presetReply,setPresetReply]=useState("");
+ useEffect(()=>{
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("responder")==="no_asistire"){
+   setPresetReply("no_asistire");
+   window.history.replaceState(null,"",window.location.pathname+window.location.hash);
+  }
+ },[]);
  async function reload(){
   setLoading(true);setError("");
   const start=new Date(month.getFullYear(),month.getMonth(),1);
@@ -76,8 +85,8 @@ export default function BandCalendar({role}:{role:string}){
  useRecordAnchor("evento-",selected?.id??"");
  useEffect(()=>{
   const response=answers.find(a=>a.event_id===selected?.id);
-  setReply(response?.response??"");setReason(response?.justification??"");
- },[selected?.id,answers]);
+  setReply(response?.response??presetReply);setReason(response?.justification??"");
+ },[selected?.id,answers,presetReply]);
  const days=useMemo(()=>{
   const first=new Date(month.getFullYear(),month.getMonth(),1);
   const offset=(first.getDay()+6)%7;

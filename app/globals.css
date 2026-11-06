@@ -94,3 +94,49 @@ html[data-theme="light"] .formSuccess{color:#235b33}
 
 .demoNavigation{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
 .demoNavigation button{min-height:44px;padding:10px 13px;font-size:13px}
+/* Recordatorios, cuenta atrás, cumpleaños, afinador y metrónomo (nov. 2026) */
+.dashboardExtras{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin:16px 0}
+.countdownCard,.birthdayCard,.pushNudge,.toolsCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.countdownCard h2,.birthdayCard h2{margin:6px 0 10px}
+.countdownCard.during{border-color:var(--accent)}
+.countdownNumbers{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 10px}
+.countdownNumbers div{background:var(--surface-alt);border-radius:12px;padding:10px 4px;text-align:center}
+.countdownNumbers strong{display:block;font-size:clamp(24px,7vw,36px);line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.countdownNumbers small{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.countdownCard p{margin:0;font-size:13px}
+.birthdayToday{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.birthdayList{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:6px}
+.birthdayList li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.birthdayWhen{margin-left:auto;font-size:13px;color:var(--accent);font-weight:600}
+.pushNudge{display:flex;gap:12px;align-items:center;margin:14px 0;border-color:var(--accent)}
+.pushNudge>span{font-size:28px}.pushNudge p{margin:2px 0 0;font-size:13px}.pushNudge>div{flex:1}
+.birthdayPost{border-color:var(--accent)!important;background:linear-gradient(135deg,var(--surface),var(--surface-alt))}
+.birthdayPrompt{position:fixed;inset:0;z-index:3000;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px}
+.birthdayPromptCard{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:22px;max-width:440px;width:100%;display:grid;gap:10px;box-shadow:0 20px 50px #0008}
+.birthdayPromptCard h2{margin:0}.birthdayPromptCard label{display:grid;gap:6px}
+.toolsGrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.tuner{display:grid;gap:12px}
+.tunerSettings{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.tunerSettings label{display:grid;gap:4px;font-size:13px}
+.tunerDisplay{display:grid;gap:8px;justify-items:center;text-align:center;background:var(--surface-alt);border:2px solid var(--border);border-radius:16px;padding:16px;transition:border-color .2s}
+.tunerDisplay.inTune{border-color:#3ecf7a}
+.tunerLabel{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tunerNote{font-size:clamp(48px,16vw,80px);line-height:1;color:var(--accent)}.tunerNote small{font-size:.35em;margin-left:4px;color:var(--muted)}
+.tunerDisplay.inTune .tunerNote{color:#3ecf7a}
+.tunerGauge{position:relative;width:100%;max-width:340px;height:34px;border-radius:17px;background:linear-gradient(90deg,#d9534f33,#3ecf7a55 45%,#3ecf7a 50%,#3ecf7a55 55%,#d9534f33)}
+.tunerScale{position:absolute;inset:auto 8px -18px;display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.tunerScale i{font-style:normal}
+.tunerNeedle{position:absolute;top:-4px;bottom:-4px;width:4px;border-radius:2px;background:var(--text);transition:left .12s linear}
+.tunerVerdict{margin-top:14px;font-weight:700}
+.metronome{display:grid;gap:12px}.metronome h2{margin:0}
+.metronomeBeats{display:flex;gap:10px;justify-content:center;min-height:22px}
+.metronomeBeats span{width:18px;height:18px;border-radius:50%;background:var(--surface-alt);border:2px solid var(--border);transition:background .05s}
+.metronomeBeats span.accent{border-color:var(--accent)}.metronomeBeats span.on{background:var(--accent)}
+.metronomeTempo{display:flex;align-items:center;justify-content:center;gap:16px}
+.metronomeTempo button{width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--surface-alt);color:var(--text);font-size:24px;cursor:pointer}
+.metronomeTempo output{display:grid;justify-items:center;min-width:90px}.metronomeTempo strong{font-size:44px;line-height:1;font-variant-numeric:tabular-nums}.metronomeTempo small{color:var(--muted)}
+.metronome input[type=range]{width:100%;accent-color:var(--accent)}
+.metronomeRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.metronome.compact{gap:8px}.metronome.compact .metronomeTempo strong{font-size:30px}.metronome.compact .metronomeTempo button{width:40px;height:40px}
+.scoreStandMetronome{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));width:min(300px,calc(100vw - 16px));background:var(--overlay);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:10px;backdrop-filter:blur(8px);z-index:5}
+.scoreStandMetronome[hidden]{display:none}
+.scoreStandToolbar>button.scoreStandTool{background:transparent;color:var(--text);border:1px solid var(--border)}
+@media(orientation:landscape) and (max-height:540px){.scoreStandMetronome{width:260px;padding:6px}.metronome.compact input[type=range]{display:none}}

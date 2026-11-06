@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import Metronome from "../afinador/metronome";
 
 type Props={url:string;title:string;mime:string;onClose:()=>void};
 type PdfDocument=import("pdfjs-dist").PDFDocumentProxy;
@@ -20,6 +21,25 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
   window.addEventListener("keydown",esc);
   return()=>{document.body.style.overflow=oldOverflow;window.removeEventListener("keydown",esc);};
  },[onClose]);
+ // Mantener la pantalla encendida mientras la partitura está abierta.
+ const [awake,setAwake]=useState(false);
+ useEffect(()=>{
+  type Sentinel={release:()=>Promise<void>;addEventListener:(t:string,f:()=>void)=>void};
+  const nav=navigator as Navigator&{wakeLock?:{request:(t:"screen")=>Promise<Sentinel>}};
+  if(!nav.wakeLock)return;
+  let lock:Sentinel|null=null;let closed=false;
+  const acquire=async()=>{
+   if(closed||document.visibilityState!=="visible")return;
+   try{lock=await nav.wakeLock!.request("screen");setAwake(true);lock.addEventListener("release",()=>setAwake(false));}catch{setAwake(false);}
+  };
+  void acquire();
+  const again=()=>{if(document.visibilityState==="visible")void acquire();};
+  document.addEventListener("visibilitychange",again);
+  return()=>{closed=true;document.removeEventListener("visibilitychange",again);void lock?.release().catch(()=>{});};
+ },[]);
+ const [showMetronome,setShowMetronome]=useState(false);
+ // Deslizar el dedo para pasar página.
+ const swipe=useRef<{x:number;y:number}|null>(null);
  useEffect(()=>{
   if(!pdfMode)return;
   let cancelled=false;
@@ -82,7 +102,10 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
  const [tip,setTip]=useState(true);
  const tap=(action:()=>void)=>{action();setTip(false);};
  return <div className="scoreStand" role="dialog" aria-modal="true" aria-label={"Modo atril: "+title}>
-   <div className="scoreStandSurface" ref={surface}>
+   <div className="scoreStandSurface" ref={surface}
+    onTouchStart={e=>{const t=e.touches[0];swipe.current=t?{x:t.clientX,y:t.clientY}:null;}}
+    onTouchEnd={e=>{const s0=swipe.current;const t=e.changedTouches[0];swipe.current=null;if(!s0||!t||!pdfMode)return;
+     const dx=t.clientX-s0.x,dy=t.clientY-s0.y;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){tap(dx<0?next:prev);}}}>
     {pdfMode?<canvas ref={canvas} className="scoreStandCanvas" aria-label={title+" página "+page}/>:isImage?<img className="scoreStandImage" src={url} alt={title}/>:null}
     {loading&&<span className="scoreStandLoading">Preparando partitura…</span>}
     {error&&<span className="scoreStandLoading" role="alert">{error}</span>}
@@ -93,8 +116,9 @@ export default function ScoreStand({url,title,mime,onClose}:Props){
    </div>
    <div className="scoreStandTop">
     <button type="button" className="scoreStandToggle" onClick={()=>setShowControls(x=>!x)} aria-label={showControls?"Ocultar controles":"Mostrar controles"}>{showControls?"⋯":"☰"}</button>
-    {showControls&&<div className="scoreStandToolbar"><span title={title}>{title}</span>{pdfMode&&pages>1&&<span>{page} / {pages}</span>}<button type="button" onClick={onClose}>Salir</button></div>}
+    {showControls&&<div className="scoreStandToolbar"><span title={title}>{title}</span>{pdfMode&&pages>1&&<span>{page} / {pages}</span>}{awake&&<span title="La pantalla no se apagará">☀︎</span>}<button type="button" className="scoreStandTool" onClick={()=>setShowMetronome(x=>!x)} aria-pressed={showMetronome}>♩ Metrónomo</button><button type="button" onClick={onClose}>Salir</button></div>}
    </div>
-   {tip&&<span className="scoreStandTip">Gira el móvil en horizontal. {pdfMode&&pages>1?"Toca los lados para pasar página.":""}</span>}
+   <div className="scoreStandMetronome" hidden={!showMetronome}><Metronome compact/></div>
+   {tip&&<span className="scoreStandTip">Gira el móvil en horizontal. {pdfMode&&pages>1?"Toca los lados o desliza para pasar página.":""}</span>}
  </div>;
 }

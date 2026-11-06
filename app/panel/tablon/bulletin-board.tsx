@@ -4,7 +4,7 @@ import Link from "@/lib/app-data";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {actionLabel,detectAnnouncementLink,safeAppLink,type LinkChoice} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
-type Post={link_path:string|null;id:string;title:string;content:string;priority:string;author_id:string;created_at:string};
+type Post={link_path:string|null;birthday_user_id?:string|null;id:string;title:string;content:string;priority:string;author_id:string;created_at:string};
 type Comment={id:string;post_id:string;content:string;author_id:string;created_at:string};
 type Person={id:string;display_name:string};
 const date=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
@@ -31,7 +31,7 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
  async function reload(){
   setLoading(true);
   const [a,b,p]=await Promise.all([
-   db.from("board_posts").select("id,title,content,priority,author_id,created_at,link_path").order("created_at",{ascending:false}).limit(200),
+   db.from("board_posts").select("id,title,content,priority,author_id,created_at,link_path,birthday_user_id").order("created_at",{ascending:false}).limit(200),
    db.from("board_comments").select("id,post_id,content,author_id,created_at").order("created_at",{ascending:true}).limit(1000),
    db.rpc("board_people")
   ]);
@@ -119,21 +119,23 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
    {loading?<p className="muted">Cargando anuncios…</p>:filtered.length===0?<p className="muted">Todavía no hay comunicados con esta búsqueda.</p>:filtered.map(post=>{
     const replies=comments.filter(c=>c.post_id===post.id);
     const postLink=safeAppLink(post.link_path)??detectAnnouncementLink(post.title+" "+post.content,choices);
-    return <article className="boardPost linkedRecord" key={post.id} id={"anuncio-"+post.id} tabIndex={-1}>
-     <div className="boardPostTop"><span className={post.priority==="importante"?"boardPriority important":"boardPriority"}>{post.priority==="importante"?"IMPORTANTE":"Comunicado"}</span><span className="muted small">{date.format(new Date(post.created_at))}</span></div>
+    const birthday=Boolean(post.birthday_user_id);
+    const open=expanded===post.id||(birthday&&expanded===null&&Date.now()-Date.parse(post.created_at)<86400000);
+    return <article className={"boardPost linkedRecord"+(birthday?" birthdayPost":"")} key={post.id} id={"anuncio-"+post.id} tabIndex={-1}>
+     <div className="boardPostTop"><span className={post.priority==="importante"?"boardPriority important":"boardPriority"}>{birthday?"🎂 CUMPLEAÑOS":post.priority==="importante"?"IMPORTANTE":"Comunicado"}</span><span className="muted small">{date.format(new Date(post.created_at))}</span></div>
      <h3>{post.title}</h3><p className="boardBody">{post.content}</p>
      {postLink&&<Link className="primaryButton linkButton noticeCta" href={postLink}>{actionLabel(postLink)}</Link>}
-     <p className="muted small">Publicado por {names.get(post.author_id)||"Directiva"}</p>
-     <button className="boardCommentsButton" type="button" onClick={()=>setExpanded(expanded===post.id?null:post.id)}>{expanded===post.id?"Ocultar conversación":"Ver conversación"} · {replies.length} mensajes</button>
+     <p className="muted small">{birthday?"Publicado automáticamente por PASIÓN APP":"Publicado por "+(names.get(post.author_id)||"Directiva")}</p>
+     <button className="boardCommentsButton" type="button" onClick={()=>setExpanded(open?"":post.id)}>{open?"Ocultar conversación":birthday?"Ver felicitaciones":"Ver conversación"} · {replies.length} {birthday?"felicitaciones":"mensajes"}</button>
      {isBoard&&<div className="attendanceActions"><button className="secondaryButton" type="button" disabled={busy} onClick={()=>void removePost(post)}>Eliminar anuncio</button></div>}
-     {expanded===post.id&&<div className="boardThread">
+     {open&&<div className="boardThread">
       {replies.length===0?<p className="muted small">Todavía no hay mensajes.</p>:replies.map(reply=><div className="boardReply" key={reply.id}>
        <div className="boardReplyHeading"><strong>{names.get(reply.author_id)||"Miembro"}</strong><span className="muted small">{date.format(new Date(reply.created_at))}</span></div>
        <p>{reply.content}</p>
       </div>)}
       <form onSubmit={e=>{e.preventDefault();void sendComment(post.id);}} className="boardReplyForm">
-       <label>Escribir mensaje<textarea required rows={2} maxLength={1500} value={writing[post.id]??""} onChange={e=>setWriting(old=>({...old,[post.id]:e.target.value}))} placeholder="Responder a este comunicado…"/></label>
-       <button disabled={isDemo||busy||!(writing[post.id]??"").trim()} className="primaryButton" type="submit">{busy?"Enviando…":"Enviar respuesta"}</button>
+       <label>Escribir mensaje<textarea required rows={2} maxLength={1500} value={writing[post.id]??""} onChange={e=>setWriting(old=>({...old,[post.id]:e.target.value}))} placeholder={birthday?"Escribe tu felicitación… 🎉":"Responder a este comunicado…"}/></label>
+       <button disabled={isDemo||busy||!(writing[post.id]??"").trim()} className="primaryButton" type="submit">{busy?"Enviando…":birthday?"Felicitar 🎂":"Enviar respuesta"}</button>
       </form>
      </div>}
     </article>;
