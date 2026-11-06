@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {INSTRUMENTS,TRANSPOSITIONS,detectPitchDetailed,midiToFrequency,noteName,presetForPart,readPitch,type Notation,type Reading} from "@/lib/tuning";
+import Select from "@/components/app-select";
 
 type Settings={instrument:string;transposition:string;a4:number;notation:Notation};
 const KEY="pasion-tuner-v1";
@@ -106,18 +107,18 @@ export default function Tuner({partName}:{partName:string|null}){
  const references=[{id:"sib",label:"Si♭ real",midi:70},{id:"la",label:"La real",midi:69},{id:"fa",label:"Fa real",midi:65}];
  return <section className="tuner">
   <div className="tunerSettings">
-   <label>Mi instrumento<select value={settings.instrument} onChange={e=>chooseInstrument(e.target.value)}>
+   <label>Mi instrumento<Select value={settings.instrument} onChange={e=>chooseInstrument(e.target.value)}>
     {INSTRUMENTS.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}
-   </select></label>
-   <label>Afinación del instrumento<select value={settings.transposition} onChange={e=>update({transposition:e.target.value})}>
+   </Select></label>
+   <label>Afinación del instrumento<Select value={settings.transposition} onChange={e=>update({transposition:e.target.value})}>
     {TRANSPOSITIONS.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-   </select></label>
-   <label>La de referencia<select value={settings.a4} onChange={e=>update({a4:Number(e.target.value)})}>
+   </Select></label>
+   <label>La de referencia<Select value={settings.a4} onChange={e=>update({a4:Number(e.target.value)})}>
     {REFERENCES.map(r=><option key={r} value={r}>La = {r} Hz</option>)}
-   </select></label>
-   <label>Nombres de notas<select value={settings.notation} onChange={e=>update({notation:e.target.value as Notation})}>
+   </Select></label>
+   <label>Nombres de notas<Select value={settings.notation} onChange={e=>update({notation:e.target.value as Notation})}>
     <option value="latin">Do, Re, Mi…</option><option value="english">C, D, E…</option>
-   </select></label>
+   </Select></label>
   </div>
   <p className="muted small">{transposition.detail}</p>
   <div className={"tunerDisplay"+(inTune?" inTune":"")} aria-live="polite">

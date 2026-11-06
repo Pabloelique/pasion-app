@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 type Asset={id:string;asset_code:string;title:string;category:string;condition:string;owner_type:string;assigned_to:string|null;purchase_date:string|null;purchase_price_cents:number|null;next_maintenance:string|null;notes:string;created_by:string;updated_at:string};
 type Member={id:string;display_name:string};
 const categories:Record<string,string>={corneta:"Cornetas",trompeta:"Trompetas",trombon:"Trombones",bombardino:"Bombardinos",tuba:"Tubas",percusion:"Percusión",uniforme:"Uniformes",accesorio:"Accesorios",otro:"Otros"};
@@ -62,10 +63,10 @@ export default function Inventory({userId}:{userId:string}){
      <form className="inventoryForm" onSubmit={e=>void save(e)}>
       <label>Código de inventario<input required maxLength={40} minLength={2} placeholder="Ej. TPT-001" value={form.asset_code} onChange={e=>update("asset_code",e.target.value)}/></label>
       <label>Nombre del material<input required minLength={3} maxLength={150} placeholder="Ej. Trompeta Yamaha" value={form.title} onChange={e=>update("title",e.target.value)}/></label>
-      <label>Tipo<select value={form.category} onChange={e=>update("category",e.target.value)}>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Estado<select value={form.condition} onChange={e=>update("condition",e.target.value)}>{Object.entries(states).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Titularidad<select value={form.owner_type} onChange={e=>update("owner_type",e.target.value)}>{Object.entries(owners).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
-      <label>Asignado a<select value={form.assigned_to} onChange={e=>update("assigned_to",e.target.value)}><option value="">Sin asignar</option>{people.map(p=><option value={p.id} key={p.id}>{p.display_name}</option>)}</select></label>
+      <label>Tipo<Select value={form.category} onChange={e=>update("category",e.target.value)}>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></label>
+      <label>Estado<Select value={form.condition} onChange={e=>update("condition",e.target.value)}>{Object.entries(states).map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></label>
+      <label>Titularidad<Select value={form.owner_type} onChange={e=>update("owner_type",e.target.value)}>{Object.entries(owners).map(([id,name])=><option value={id} key={id}>{name}</option>)}</Select></label>
+      <label>Asignado a<Select value={form.assigned_to} onChange={e=>update("assigned_to",e.target.value)}><option value="">Sin asignar</option>{people.map(p=><option value={p.id} key={p.id}>{p.display_name}</option>)}</Select></label>
       <label>Fecha de compra<input type="date" value={form.purchase_date} onChange={e=>update("purchase_date",e.target.value)}/></label>
       <label>Precio de compra (€)<input inputMode="decimal" placeholder="Opcional" value={form.purchase_price} onChange={e=>update("purchase_price",e.target.value)}/></label>
       <label>Próximo mantenimiento<input type="date" value={form.next_maintenance} onChange={e=>update("next_maintenance",e.target.value)}/></label>
@@ -75,8 +76,8 @@ export default function Inventory({userId}:{userId:string}){
    </section>
    <section className="inventoryCard"><h2>Material registrado</h2>
      <div className="inventoryFilters"><label>Buscar<input placeholder="Código, nombre o músico" value={filter} onChange={e=>setFilter(e.target.value)}/></label>
-      <label>Tipo<select value={cat} onChange={e=>setCat(e.target.value)}><option value="todos">Todos los tipos</option>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Estado<select value={condition} onChange={e=>setCondition(e.target.value)}><option value="todos">Todos los estados</option>{Object.entries(states).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
+      <label>Tipo<Select value={cat} onChange={e=>setCat(e.target.value)}><option value="todos">Todos los tipos</option>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></label>
+      <label>Estado<Select value={condition} onChange={e=>setCondition(e.target.value)}><option value="todos">Todos los estados</option>{Object.entries(states).map(([id,name])=><option value={id} key={id}>{name}</option>)}</Select></label>
      </div>
      {error&&<p className="formError" role="alert">{error}</p>}
      {message&&<p className="formSuccess" role="status">{message}</p>}

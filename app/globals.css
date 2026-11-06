@@ -267,3 +267,9 @@ details:hover{border-color:var(--accent)}
 .familyCheckOptions label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:14px}
 .familyCheckOptions label.on{border-color:var(--accent);color:var(--accent);font-weight:700}
 .familyCheckOptions input{width:auto;margin:0}
+/* Desplegable general (Select) */
+.appSelectOptions{display:grid;gap:4px}
+.appSelectPanel{width:max(100%,260px)}
+.appSelectSearch{width:100%;margin:2px 0 8px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-alt);color:var(--text);font-size:15px}
+.appSelectEmpty{padding:8px}
+.metronomeRow .appSelect{width:auto;min-width:120px}

@@ -3,6 +3,7 @@ import {csvCell} from "@/lib/csv";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 type Movement={id:string;movement_date:string;kind:"ingreso"|"gasto";category:string;description:string;amount_cents:number;payment_method:string;reference:string;is_test:boolean;created_at:string;reversal_of:string|null;created_by:string};
 const categories:Record<string,string>={actuacion:"Actuaciones",donacion:"Donaciones",cuota_voluntaria:"Cuotas voluntarias",subvencion:"Subvenciones",instrumentos:"Instrumentos",partituras:"Partituras",transporte:"Transporte",uniformes:"Uniformes",material:"Material",otros:"Otros"};
 const methods:Record<string,string>={efectivo:"Efectivo",transferencia:"Transferencia",tarjeta:"Tarjeta",otros:"Otros"};
@@ -82,12 +83,12 @@ export default function Treasury({userId}:{userId:string}){
   <p className="muted">Libro interno de movimientos económicos. Solo directiva y superadmin. No realiza pagos, facturas ni conciliación bancaria automática.</p>
   <section className="treasuryCard"><h2>Registrar movimiento</h2>
    <form className="treasuryForm" onSubmit={e=>void add(e)}>
-    <label>Tipo<select value={kind} onChange={e=>setKind(e.target.value as "ingreso"|"gasto")}><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option></select></label>
-    <label>Categoría<select value={category} onChange={e=>setCategory(e.target.value)}>{Object.entries(categories).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
+    <label>Tipo<Select value={kind} onChange={e=>setKind(e.target.value as "ingreso"|"gasto")}><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option></Select></label>
+    <label>Categoría<Select value={category} onChange={e=>setCategory(e.target.value)}>{Object.entries(categories).map(([id,name])=><option value={id} key={id}>{name}</option>)}</Select></label>
     <label>Fecha<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
     <label>Importe (€)<input required inputMode="decimal" placeholder="125,50" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
     <label>Concepto<input required minLength={3} maxLength={300} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Ej. Actuación Domingo de Ramos"/></label>
-    <label>Método<select value={method} onChange={e=>setMethod(e.target.value)}>{Object.entries(methods).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
+    <label>Método<Select value={method} onChange={e=>setMethod(e.target.value)}>{Object.entries(methods).map(([id,name])=><option value={id} key={id}>{name}</option>)}</Select></label>
     <label>Referencia (opcional)<input maxLength={120} value={reference} onChange={e=>setReference(e.target.value)} placeholder="Referencia bancaria o justificante"/></label>
     <button disabled={busy} type="submit" className="primaryButton">{busy?"Registrando…":"Guardar movimiento"}</button>
    </form>
@@ -96,9 +97,9 @@ export default function Treasury({userId}:{userId:string}){
    <div className="treasuryHeading"><h2>Resumen económico</h2><button className="secondaryButton" type="button" disabled={loading} onClick={()=>void reload()}>Actualizar</button></div>
    <p className="muted small">Saldo calculado exclusivamente a partir de los movimientos registrados en la app, no del saldo bancario real.</p>
    <div className="treasuryFilters">
-    <label>Tipo<select value={filterKind} onChange={e=>setFilterKind(e.target.value)}><option value="todos">Todos</option><option value="ingreso">Ingresos</option><option value="gasto">Gastos</option></select></label>
-    <label>Categoría<select value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}><option value="todos">Todas</option>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
-    <label>Año<select value={filterYear} onChange={e=>setFilterYear(e.target.value)}><option value="todos">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+    <label>Tipo<Select value={filterKind} onChange={e=>setFilterKind(e.target.value)}><option value="todos">Todos</option><option value="ingreso">Ingresos</option><option value="gasto">Gastos</option></Select></label>
+    <label>Categoría<Select value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}><option value="todos">Todas</option>{Object.entries(categories).map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></label>
+    <label>Año<Select value={filterYear} onChange={e=>setFilterYear(e.target.value)}><option value="todos">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</Select></label>
    </div>
    <div className="treasuryStats"><div><span>Ingresos</span><strong>{money(amounts.ingreso)}</strong></div><div><span>Gastos</span><strong>{money(amounts.gasto)}</strong></div><div><span>Saldo</span><strong>{money(amounts.ingreso-amounts.gasto)}</strong></div></div>
    <div className="treasuryHeading"><h3>Movimientos ({visible.length})</h3><button className="secondaryButton" type="button" onClick={exportCsv} disabled={loading||visible.length===0}>Exportar CSV</button></div>

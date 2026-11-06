@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from "react";
 import PartPicker from "@/components/part-picker";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 
 type Member = {id:string;first_name:string;last_name:string;email:string;musical_part_id:number|null;musical_part:string|null;role:string;requested_role:string;approval_status:string;created_at:string};
 type ViewerAccess={id:string;requested_at:string|null;expires_at:string|null};
@@ -87,7 +88,7 @@ export default function MembersDirectory({role}:{role:string}){
     <p className="muted">Consulta músicos, revisa su estado y administra sus permisos según tu rol. Cada modificación se verifica en Supabase.</p>
     {role==="superadmin"&&<p><Link className="secondaryButton linkButton" href="/demo">Ver demostración sin datos reales</Link></p>}
     <div className="memberStats"><div><strong>{members.length}</strong><span>Miembros</span></div><div><strong>{members.filter(m=>m.approval_status==="approved").length}</strong><span>Aprobados</span></div><div><strong>{members.filter(m=>m.approval_status==="pending").length}</strong><span>Pendientes</span></div></div>
-    <div className="memberFilters"><label>Buscar<input aria-label="Buscar miembros" value={search} placeholder="Nombre, correo, instrumento…" onChange={e=>setSearch(e.target.value)}/></label><label>Estado<select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos</option>{Object.entries(states).filter(([k])=>role==="superadmin"||k!=="demo").map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label><div className="fieldLabel">Instrumento<PartPicker parts={parts} value={part} onChange={setPart} extras={[{value:"all",label:"Todos los hilos"}]} ariaLabel="Filtrar por hilo"/></div></div>
+    <div className="memberFilters"><label>Buscar<input aria-label="Buscar miembros" value={search} placeholder="Nombre, correo, instrumento…" onChange={e=>setSearch(e.target.value)}/></label><label>Estado<Select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos</option>{Object.entries(states).filter(([k])=>role==="superadmin"||k!=="demo").map(([k,v])=><option key={k} value={k}>{v}</option>)}</Select></label><div className="fieldLabel">Instrumento<PartPicker parts={parts} value={part} onChange={setPart} extras={[{value:"all",label:"Todos los hilos"}]} ariaLabel="Filtrar por hilo"/></div></div>
     <div className="requestToolbar"><span>{loading?"Cargando…":`${filtered.length} resultados`}</span><button className="secondaryButton" disabled={loading||Boolean(busy)} onClick={()=>void load()}>Actualizar</button></div>
     {error&&<p className="formError" role="alert">{error}</p>}
     {success&&<p className="formSuccess" role="status">{success}</p>}

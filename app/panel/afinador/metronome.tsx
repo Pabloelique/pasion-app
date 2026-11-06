@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import Select from "@/components/app-select";
 
 const STORAGE="pasion-metronome-v1";
 const METERS=[{beats:2,label:"2/4"},{beats:3,label:"3/4"},{beats:4,label:"4/4"},{beats:6,label:"6/8"},{beats:1,label:"Sin acento"}];
@@ -86,9 +87,9 @@ export default function Metronome({compact=false}:{compact?:boolean}){
   </div>
   <input type="range" min={30} max={240} value={bpm} onChange={e=>setBpm(clampBpm(Number(e.target.value)))} aria-label="Tempo en pulsaciones por minuto"/>
   <div className="metronomeRow">
-   <select value={beats} onChange={e=>setBeats(Number(e.target.value))} aria-label="Compás">
+   <Select value={beats} onChange={e=>setBeats(Number(e.target.value))} aria-label="Compás">
     {METERS.map(m=><option key={m.label} value={m.beats}>{m.label}</option>)}
-   </select>
+   </Select>
    <button type="button" className="secondaryButton" onClick={tap}>Marcar tempo</button>
    <button type="button" className="primaryButton" onClick={()=>playing?stop():void start()}>{playing?"■ Parar":"▶ Empezar"}</button>
   </div>

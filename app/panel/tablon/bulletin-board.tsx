@@ -4,6 +4,7 @@ import Link from "@/lib/app-data";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {actionLabel,detectAnnouncementLink,safeAppLink,type LinkChoice} from "@/lib/notice-links";
 import {useRecordAnchor} from "@/lib/use-record-anchor";
+import Select from "@/components/app-select";
 type Post={link_path:string|null;birthday_user_id?:string|null;id:string;title:string;content:string;priority:string;author_id:string;created_at:string};
 type Comment={id:string;post_id:string;content:string;author_id:string;created_at:string};
 type Person={id:string;display_name:string};
@@ -99,12 +100,12 @@ export default function BulletinBoard({role,userId}:{role:string;userId:string})
    <form className="boardForm" onSubmit={e=>void publish(e)}>
     <label>Título<input required maxLength={160} minLength={3} placeholder="Ej. Cambio de horario del ensayo" value={title} onChange={e=>setTitle(e.target.value)}/></label>
     <label>Mensaje<textarea required rows={4} maxLength={4000} minLength={3} placeholder="Escribe el comunicado para todos los músicos…" value={content} onChange={e=>setContent(e.target.value)}/></label>
-    <label>Importancia<select value={priority} onChange={e=>setPriority(e.target.value)}><option value="normal">Normal</option><option value="importante">Importante</option></select></label>
-    <label>Botón dentro del anuncio<select value={linkMode} onChange={e=>setLinkMode(e.target.value)}>
+    <label>Importancia<Select value={priority} onChange={e=>setPriority(e.target.value)}><option value="normal">Normal</option><option value="importante">Importante</option></Select></label>
+    <label>Botón dentro del anuncio<Select value={linkMode} onChange={e=>setLinkMode(e.target.value)}>
      <option value="auto">Reconocer automáticamente</option><option value="none">Sin botón</option>
      <option value="/panel/votaciones">Votación de nuevas marchas</option><option value="/panel/calendario">Calendario</option><option value="/panel/partituras">Partituras</option><option value="/panel/repertorio">Repertorio</option>
      {choices.map(v=><option key={v.path} value={v.path}>{v.label}</option>)}
-    </select></label>
+    </Select></label>
     {linkError&&<p className="muted small">{linkError}</p>}
     <p className="muted small">{destination?"Se añadirá el botón «"+actionLabel(destination)+"». Destino: "+(choices.find(v=>v.path===destination)?.label??destination):"El mensaje se publicará sin botón. Puedes elegir un destino arriba."}</p>
     <button type="submit" disabled={busy} className="primaryButton">{busy?"Publicando…":"Publicar anuncio"}</button>

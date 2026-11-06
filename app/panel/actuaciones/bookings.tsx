@@ -3,6 +3,7 @@ import {csvCell} from "@/lib/csv";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 type Booking={id:string;title:string;customer_name:string;location:string;performance_date:string;start_time:string|null;duration_minutes:number|null;status:string;fee_cents:number;notes:string;contract_reference:string;is_test:boolean;created_at:string};
 type Payment={id:string;booking_id:string;paid_on:string;amount_cents:number;method:string;reference:string};
 const statuses:Record<string,string>={propuesta:"Propuesta",negociacion:"En negociación",confirmada:"Confirmada",realizada:"Realizada",cancelada:"Cancelada"};
@@ -82,7 +83,7 @@ export default function Bookings({userId}:{userId:string}){
     <label>Fecha<input type="date" required value={form.performance_date} onChange={e=>field("performance_date",e.target.value)}/></label>
     <label>Hora de inicio<input type="time" value={form.start_time} onChange={e=>field("start_time",e.target.value)}/></label>
     <label>Duración (minutos)<input type="number" min={15} max={1440} value={form.duration_minutes} onChange={e=>field("duration_minutes",e.target.value)}/></label>
-    <label>Estado<select value={form.status} onChange={e=>field("status",e.target.value)}>{Object.entries(statuses).map(([v,t])=><option key={v} value={v}>{t}</option>)}</select></label>
+    <label>Estado<Select value={form.status} onChange={e=>field("status",e.target.value)}>{Object.entries(statuses).map(([v,t])=><option key={v} value={v}>{t}</option>)}</Select></label>
     <label>Caché acordado (€)<input inputMode="decimal" value={form.fee} onChange={e=>field("fee",e.target.value)} placeholder="Ej. 650,00"/></label>
     <label>Referencia del contrato<input maxLength={200} value={form.contract_reference} onChange={e=>field("contract_reference",e.target.value)} placeholder="Código interno o nombre del PDF"/></label>
     <label className="bookingWide">Observaciones<textarea rows={3} maxLength={2500} value={form.notes} onChange={e=>field("notes",e.target.value)} placeholder="Repertorio, condiciones, contacto…"/></label>
@@ -91,7 +92,7 @@ export default function Bookings({userId}:{userId:string}){
   </section>
   <section className="bookingCard">
    <div className="bookingHead"><h2>Contrataciones ({shown.length})</h2><button className="secondaryButton" type="button" onClick={exportCsv} disabled={!shown.length}>Exportar CSV</button></div>
-   <div className="bookingFilters"><label>Buscar<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Actuación o cofradía"/></label><label>Estado<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todos">Todos</option>{Object.entries(statuses).map(([v,t])=><option key={v} value={v}>{t}</option>)}</select></label></div>
+   <div className="bookingFilters"><label>Buscar<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Actuación o cofradía"/></label><label>Estado<Select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todos">Todos</option>{Object.entries(statuses).map(([v,t])=><option key={v} value={v}>{t}</option>)}</Select></label></div>
    {error&&<p className="formError" role="alert">{error}</p>}
    {success&&<p className="formSuccess" role="status">{success}</p>}
    {loading?<p className="muted">Cargando contrataciones…</p>:shown.length===0?<p className="muted">Todavía no hay actuaciones para estos filtros.</p>:<div className="bookingList">{shown.map(b=>{
@@ -107,7 +108,7 @@ export default function Bookings({userId}:{userId:string}){
       {paying===b.id&&<div className="bookingPayment">
        <label>Importe cobrado (€)<input inputMode="decimal" value={paidAmount} onChange={e=>setPaidAmount(e.target.value)} placeholder="Ej. 150,00"/></label>
        <label>Fecha de cobro<input type="date" value={paidDate} onChange={e=>setPaidDate(e.target.value)}/></label>
-       <label>Método<select value={paidMethod} onChange={e=>setPaidMethod(e.target.value)}>{Object.entries(methods).map(([v,t])=><option key={v} value={v}>{t}</option>)}</select></label>
+       <label>Método<Select value={paidMethod} onChange={e=>setPaidMethod(e.target.value)}>{Object.entries(methods).map(([v,t])=><option key={v} value={v}>{t}</option>)}</Select></label>
        <label>Referencia<input maxLength={180} value={paidRef} onChange={e=>setPaidRef(e.target.value)}/></label>
        <button className="primaryButton" type="button" disabled={busy} onClick={()=>void payment(b)}>Confirmar cobro</button>
       </div>}

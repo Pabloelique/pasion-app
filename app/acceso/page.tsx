@@ -5,6 +5,7 @@ import PartPicker from "@/components/part-picker";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import Select from "@/components/app-select";
 
 type Part = { id: number; name: string };
 type Mode = "login" | "register";
@@ -82,7 +83,7 @@ export default function AccessPage() {
           <label>Nombre<input autoComplete="given-name" maxLength={80} required value={firstName} onChange={e => setFirstName(e.target.value)} /></label>
           <label>Apellidos<input autoComplete="family-name" maxLength={100} required value={lastName} onChange={e => setLastName(e.target.value)} /></label>
           <div className="fieldLabel">Hilo musical<PartPicker parts={parts} value={String(part)} onChange={setPart} placeholder="Selecciona tu hilo" required ariaLabel="Hilo musical"/></div>
-          <label>Rol solicitado<select value={requestedRole} onChange={e => setRequestedRole(e.target.value)}><option value="musico">Músico</option><option value="directiva">Directiva (requiere aprobación del superadmin)</option></select></label>
+          <label>Rol solicitado<Select value={requestedRole} onChange={e => setRequestedRole(e.target.value)}><option value="musico">Músico</option><option value="directiva">Directiva (requiere aprobación del superadmin)</option></Select></label>
         </>}
         <label>Correo electrónico (Gmail)<input type="email" autoComplete="email" placeholder="ejemplo@gmail.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Contraseña<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "register" ? 12 : undefined} value={password} onChange={e => setPassword(e.target.value)} /></label>
