@@ -84,3 +84,13 @@ test('social handles accept @user, plain user or full profile links',()=>{
  assert.equal(p.initials('pablo','jiménez'),'PJ');
  assert.equal(p.socialUrl('tiktok','x.y'),'https://www.tiktok.com/@x.y');
 });
+
+test('musical parts are grouped by instrument family and ordered 1, 2, 3', ()=>{
+ const p=load('parts');
+ const parts=[{id:1,name:'Corneta 1'},{id:2,name:'Trompeta 1'},{id:3,name:'Trompeta 2'},{id:4,name:'Bombardino 1'},{id:5,name:'Tuba 1'},{id:6,name:'Trombón de varas'},{id:7,name:'Tambores'},{id:8,name:'Trompeta 3'},{id:9,name:'Trombón 2'},{id:10,name:'Bombardino 2'},{id:11,name:'Tuba en Do'},{id:12,name:'Tuba en Si bemol'},{id:13,name:'Corneta Do/Reb'},{id:14,name:'Trombón de pistones'}];
+ const g=p.groupParts(parts);
+ assert.deepEqual(g.map(f=>f.name),['Cornetas','Trompetas','Trombones','Bombardinos','Tubas','Percusión']);
+ assert.deepEqual(g[1].parts.map(x=>x.name),['Trompeta 1','Trompeta 2','Trompeta 3']);
+ assert.deepEqual(g[2].parts.map(x=>x.name),['Trombón 2','Trombón de pistones','Trombón de varas']);
+ assert.equal(g.reduce((n,f)=>n+f.parts.length,0),14);
+});

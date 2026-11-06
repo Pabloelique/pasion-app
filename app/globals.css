@@ -223,3 +223,47 @@ details[open]>summary{border-bottom:1px solid var(--border)}
 details>:not(summary){margin-left:16px;margin-right:16px}
 details>:last-child:not(summary){margin-bottom:14px}
 details:hover{border-color:var(--accent)}
+/* Selector de hilos agrupado por familias (nov. 2026) */
+.fieldLabel{display:grid;gap:6px;font-size:inherit}
+.partPicker{position:relative;width:100%}
+.partPickerRequired{position:absolute;inset:auto 0 0 0;height:1px;opacity:0;pointer-events:none}
+.partPickerButton{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-alt);color:var(--text);font:inherit;font-size:16px;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.partPickerButton:hover:not(:disabled){border-color:var(--accent)}
+.partPicker.open .partPickerButton{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.partPickerButton:disabled{opacity:.6;cursor:not-allowed}
+.partPickerIcon{font-size:18px;width:24px;text-align:center}
+.partPickerLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.partPickerLabel.placeholder{color:var(--muted)}
+.partPickerArrow{color:var(--muted);font-size:18px;transition:transform .2s}
+.partPicker.open .partPickerArrow{transform:rotate(180deg);color:var(--accent)}
+.partPickerBackdrop{display:none}
+.partPickerPanel{position:absolute;z-index:80;top:calc(100% + 6px);left:0;width:max(100%,320px);max-width:min(92vw,460px);max-height:min(60vh,460px);overflow:auto;padding:8px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-shadow:0 18px 40px #0006;animation:partPickerIn .16s ease}
+@keyframes partPickerIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.partPickerSheetHead{display:none}
+.partPickerExtras{display:grid;gap:4px;padding:4px 4px 8px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+.partFamily{padding:4px}
+.partFamilyHead{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);padding:6px 6px 4px}
+.partFamilyOptions{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px}
+.partOption{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:42px;padding:8px 12px;border-radius:10px;border:1px solid transparent;background:var(--surface-alt);color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}
+.partOption:hover,.partOption:focus-visible{border-color:var(--accent);outline:none}
+.partOption[aria-selected="true"]{background:var(--accent);color:var(--button-text,#fff);font-weight:700}
+.partOption.extra{font-weight:600}
+.partCheck{font-weight:800}
+@media(max-width:640px){
+ .partPickerBackdrop{display:block;position:fixed;inset:0;z-index:2990;background:#0008;animation:partPickerFade .2s ease}
+ .partPickerPanel{position:fixed;z-index:3000;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;max-height:78vh;border-radius:20px 20px 0 0;padding:6px 12px calc(16px + env(safe-area-inset-bottom,0px));animation:partPickerUp .22s ease}
+ .partPickerSheetHead{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);padding:10px 4px;z-index:1}
+ .partPickerSheetHead button{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface-alt);color:var(--text);cursor:pointer}
+ .partOption{min-height:48px;font-size:15px}
+}
+@keyframes partPickerUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes partPickerFade{from{opacity:0}to{opacity:1}}
+/* Convocatoria de ensayo: casillas por familia */
+.familyChecks{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.familyCheck{border:1px solid var(--border);border-radius:12px;padding:8px;background:var(--surface-alt)}
+.familyCheckHead{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;margin-bottom:6px}
+.familyToggle{border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.familyCheckOptions{display:flex;flex-wrap:wrap;gap:6px}
+.familyCheckOptions label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:14px}
+.familyCheckOptions label.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.familyCheckOptions input{width:auto;margin:0}

@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
+import PartPicker from "@/components/part-picker";
 import Link from "@/lib/app-data";
 import ScoreStand from "./score-stand";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
@@ -133,7 +134,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   <p className="muted">{isDemo?"Prueba el modo atril con una versión didáctica de una melodía real de Beethoven. No contiene partituras de la agrupación.":canUpload?"Consulta todos los hilos y sube nuevos materiales musicales.":"Consulta los materiales de tu hilo musical. Los archivos son privados."}</p>
   {role==="superadmin"&&<p className="notice"><strong>Importación masiva desde Drive</strong><p>Importa todas las marchas de una carpeta, con control de duplicados y guiones restringidos a directiva.</p><Link href="/panel/partituras/importar" className="primaryButton linkButton">Abrir importador masivo →</Link></p>}{canUpload&&<section className="scoreUpload"><h2>Añadir material</h2><form onSubmit={e=>void upload(e)} className="scoreForm">
    <label>Título de la marcha o material<input value={name} onChange={e=>setName(e.target.value)} maxLength={160} placeholder="Ej. La Pasión — Corneta 1" required/></label>
-   <label>Hilo musical<select value={uploadPart} onChange={e=>setUploadPart(e.target.value)} required>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+   <div className="fieldLabel">Hilo musical<PartPicker parts={parts} value={uploadPart} onChange={setUploadPart} required ariaLabel="Hilo musical"/></div>
    <label>Archivo<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.docx" onChange={e=>setFile(e.target.files?.[0]??null)} required/></label>
    <label className="checkLabel"><input type="checkbox" checked={outsideUpload} onChange={e=>setOutsideUpload(e.target.checked)}/> Fuera de repertorio (marcha que no tocamos; aparece al final, en su propio apartado)</label>
    <p className="muted small">Formatos admitidos en la app: PDF, imágenes, audio y DOCX. Límite: 20 MB por archivo.</p>
@@ -152,7 +153,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   </section>}
   <section className="scoreCatalog"><h2>Material disponible</h2><div className="memberFilters">
     <label>Buscar<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar marcha…"/></label>
-    {canUpload&&<label>Hilo musical<select value={selectedPart} onChange={e=>setSelectedPart(e.target.value)}><option value="all">Todos los hilos</option>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+    {canUpload&&<div className="fieldLabel">Hilo musical<PartPicker parts={parts} value={selectedPart} onChange={setSelectedPart} extras={[{value:"all",label:"Todos los hilos"}]} ariaLabel="Ver hilo"/></div>}
   </div>
   {error&&<p role="alert" className="formError">{error}</p>}
   {message&&<p role="status" className="formSuccess">{message}</p>}
