@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
+import PartPicker from "@/components/part-picker";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
@@ -86,7 +87,7 @@ export default function MembersDirectory({role}:{role:string}){
     <p className="muted">Consulta músicos, revisa su estado y administra sus permisos según tu rol. Cada modificación se verifica en Supabase.</p>
     {role==="superadmin"&&<p><Link className="secondaryButton linkButton" href="/demo">Ver demostración sin datos reales</Link></p>}
     <div className="memberStats"><div><strong>{members.length}</strong><span>Miembros</span></div><div><strong>{members.filter(m=>m.approval_status==="approved").length}</strong><span>Aprobados</span></div><div><strong>{members.filter(m=>m.approval_status==="pending").length}</strong><span>Pendientes</span></div></div>
-    <div className="memberFilters"><label>Buscar<input aria-label="Buscar miembros" value={search} placeholder="Nombre, correo, instrumento…" onChange={e=>setSearch(e.target.value)}/></label><label>Estado<select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos</option>{Object.entries(states).filter(([k])=>role==="superadmin"||k!=="demo").map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label><label>Instrumento<select value={part} onChange={e=>setPart(e.target.value)}><option value="all">Todos los hilos</option>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
+    <div className="memberFilters"><label>Buscar<input aria-label="Buscar miembros" value={search} placeholder="Nombre, correo, instrumento…" onChange={e=>setSearch(e.target.value)}/></label><label>Estado<select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos</option>{Object.entries(states).filter(([k])=>role==="superadmin"||k!=="demo").map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label><div className="fieldLabel">Instrumento<PartPicker parts={parts} value={part} onChange={setPart} extras={[{value:"all",label:"Todos los hilos"}]} ariaLabel="Filtrar por hilo"/></div></div>
     <div className="requestToolbar"><span>{loading?"Cargando…":`${filtered.length} resultados`}</span><button className="secondaryButton" disabled={loading||Boolean(busy)} onClick={()=>void load()}>Actualizar</button></div>
     {error&&<p className="formError" role="alert">{error}</p>}
     {success&&<p className="formSuccess" role="status">{success}</p>}
@@ -106,7 +107,7 @@ export default function MembersDirectory({role}:{role:string}){
           {viewerActive&&<button type="button" className="secondaryButton" disabled={locked} onClick={()=>void manageViewer(m,"revoke")}>Bloquear ahora</button>}
         </div>}
         {canManage&&m.role!=="viewer"&&<div className="memberControls">
-          <label>Cambiar hilo<select aria-label={`Hilo de ${m.first_name}`} disabled={locked} value={m.musical_part_id??""} onChange={e=>void modify(m,"assign_part",e.target.value)}><option value="" disabled>Seleccionar</option>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <div className="fieldLabel">Cambiar hilo<PartPicker parts={parts} value={String(m.musical_part_id??"")} disabled={locked} onChange={v=>void modify(m,"assign_part",v)} placeholder="Seleccionar" ariaLabel={`Hilo de ${m.first_name}`}/></div>
           {m.approval_status==="rejected"&&<button className="secondaryButton" disabled={locked} onClick={()=>void modify(m,"reactivate")}>Reconsiderar solicitud</button>}
           {m.approval_status==="suspended"&&<button className="secondaryButton" disabled={locked} onClick={()=>void modify(m,"reactivate")}>Restaurar acceso</button>}
           {m.approval_status==="approved"&&<button className="secondaryButton" disabled={locked} onClick={()=>void modify(m,"suspend")}>Suspender acceso</button>}

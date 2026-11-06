@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import PartPicker from "@/components/part-picker";
 import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
@@ -94,8 +95,7 @@ export default function BulkImporter(){
  {rows.length>0&&<><p className="notice">Detectados: {rows.length} · Listos: {ready} · Revisar: {rows.filter(r=>r.issue&&!r.done).length} · Terminados: {rows.filter(r=>r.done).length}</p>
  <h2>2. Revisa la clasificación</h2><div className="requestGrid">{rows.map((r,i)=><article key={i} className="requestCard"><strong>{r.file.name}</strong><p className="muted small">{r.path}</p>
  <label className="scoreImportLabel">Marcha<input value={r.title} disabled={busy||r.done} onChange={e=>adjust(i,{title:e.target.value})}/></label>
- <label className="scoreImportLabel">Destino<select disabled={busy||r.done} value={r.full?"full":r.partId??""} onChange={e=>adjust(i,e.target.value==="full"?{full:true,partId:null}:{full:false,partId:Number(e.target.value)||null})}>
- <option value="">Sin asignar</option><option value="full">Guiones completos (directiva)</option>{parts.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>
+ <div className="scoreImportLabel fieldLabel">Destino<PartPicker parts={parts} disabled={busy||r.done} value={r.full?"full":String(r.partId??"")} placeholder="Sin asignar" extras={[{value:"full",label:"Guiones completos (directiva)"}]} ariaLabel="Destino" onChange={v=>adjust(i,v==="full"?{full:true,partId:null}:{full:false,partId:Number(v)||null})}/></div>
  <label className="checkLabel"><input type="checkbox" checked={r.outside} disabled={busy||r.done||r.full} onChange={e=>adjust(i,{outside:e.target.checked})}/> Fuera de repertorio</label>
  <p className={r.issue?"formError":"muted small"}>{r.done?"Completado / duplicado":r.issue||"Preparado"}</p></article>)}</div>
  <h2>3. Importar</h2><p className="muted">{info}</p><button className="primaryButton" disabled={busy||!ready} onClick={()=>void start()}>{busy?"Importando…":"Importar "+ready+" archivos"}</button>{busy&&<p className="muted">Procesados {progress}</p>}

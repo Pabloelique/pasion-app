@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import PartPicker from "@/components/part-picker";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -80,7 +81,7 @@ export default function AccessPage() {
         {mode === "register" && <>
           <label>Nombre<input autoComplete="given-name" maxLength={80} required value={firstName} onChange={e => setFirstName(e.target.value)} /></label>
           <label>Apellidos<input autoComplete="family-name" maxLength={100} required value={lastName} onChange={e => setLastName(e.target.value)} /></label>
-          <label>Hilo musical<select required value={part} onChange={e => setPart(e.target.value)}><option value="">Selecciona tu hilo</option>{parts.map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>
+          <div className="fieldLabel">Hilo musical<PartPicker parts={parts} value={String(part)} onChange={setPart} placeholder="Selecciona tu hilo" required ariaLabel="Hilo musical"/></div>
           <label>Rol solicitado<select value={requestedRole} onChange={e => setRequestedRole(e.target.value)}><option value="musico">Músico</option><option value="directiva">Directiva (requiere aprobación del superadmin)</option></select></label>
         </>}
         <label>Correo electrónico (Gmail)<input type="email" autoComplete="email" placeholder="ejemplo@gmail.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>

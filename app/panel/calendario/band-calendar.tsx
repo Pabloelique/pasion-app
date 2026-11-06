@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
+import {groupParts} from "@/lib/parts";
 import Link from "@/lib/app-data";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
 import {validId} from "@/lib/notice-links";
@@ -140,7 +141,10 @@ export default function BandCalendar({role}:{role:string}){
   {creating&&<section className="calendarForm"><h2>Nuevo evento</h2><form className="scoreForm" onSubmit={e=>void create(e)}>
    <label>Título<input required minLength={3} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Ensayo general"/></label>
    <label>Tipo<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(types).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
-   {kind==="ensayo"&&<fieldset className="rehearsalTargets"><legend>¿A quién va dirigido este ensayo?</legend><p className="muted small">Sin seleccionar ningún hilo: ensayo general para toda la banda. Puedes seleccionar uno o varios hilos.</p><div className="rehearsalTargetChoices">{parts.map(p=><label key={p.id}><input type="checkbox" checked={targetParts.includes(p.id)} onChange={e=>setTargetParts(old=>e.target.checked?[...old,p.id]:old.filter(id=>id!==p.id))}/>{p.name}</label>)}</div><p className="muted small">{targetParts.length===0?"Convocatoria general para toda la banda":targetParts.length+" hilos seleccionados"}</p></fieldset>}
+   {kind==="ensayo"&&<fieldset className="rehearsalTargets"><legend>¿A quién va dirigido este ensayo?</legend><p className="muted small">Sin seleccionar ningún hilo: ensayo general para toda la banda. Puedes seleccionar uno o varios hilos.</p><div className="familyChecks">{groupParts(parts).map(f=>{const all=f.parts.every(p=>targetParts.includes(p.id));return <div className="familyCheck" key={f.key}>
+    <div className="familyCheckHead"><span><span aria-hidden="true">{f.icon}</span> {f.name}</span><button type="button" className="familyToggle" onClick={()=>setTargetParts(old=>all?old.filter(id=>!f.parts.some(p=>p.id===id)):[...new Set([...old,...f.parts.map(p=>p.id)])])}>{all?"Quitar todos":"Todos"}</button></div>
+    <div className="familyCheckOptions">{f.parts.map(p=><label key={p.id} className={targetParts.includes(p.id)?"on":""}><input type="checkbox" checked={targetParts.includes(p.id)} onChange={e=>setTargetParts(old=>e.target.checked?[...old,p.id]:old.filter(id=>id!==p.id))}/>{p.name}</label>)}</div>
+   </div>;})}</div><p className="muted small">{targetParts.length===0?"Convocatoria general para toda la banda":targetParts.length+" hilos seleccionados"}</p></fieldset>}
    <label>Inicio<input type="datetime-local" value={starts} required onChange={e=>setStarts(e.target.value)}/></label>
    <label>Final<input type="datetime-local" value={ends} required onChange={e=>setEnds(e.target.value)}/></label>
    <label>Lugar<input value={place} onChange={e=>setPlace(e.target.value)} maxLength={200} placeholder="Local de ensayo"/></label>
