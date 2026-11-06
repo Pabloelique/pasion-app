@@ -16,8 +16,25 @@ function marchName(title:string,parts:Part[]){
   const next=result.replace(pattern,"").trim();
   if(next&&next!==result){result=next;break;}
  }
+ result=result.replace(/\s*\((?:alta|baja|1ª\s*[ab]|2ª\s*[ab]|[ab]|versi[oó]n[^)]*)\)\s*$/i,"").trim();
  return result||title.trim();
 }
+/** Etiqueta de la versión dentro de la carpeta: «Alta», «1ª A»… o el tipo de archivo. */
+function variantLabel(title:string){
+ const m=title.match(/\(([^)]+)\)\s*$/);
+ return m?m[1].trim():"";
+}
+type Kind="score"|"audio"|"sibelius"|"other";
+function kindOf(mime:string):Kind{
+ if(mime==="application/pdf"||mime.startsWith("image/"))return "score";
+ if(mime.startsWith("audio/"))return "audio";
+ if(mime==="application/octet-stream")return "sibelius";
+ return "other";
+}
+const kindOrder:Record<Kind,number>={score:0,audio:1,sibelius:2,other:3};
+const kindInfo:Record<Kind,{icon:string;label:string}>={score:{icon:"♫",label:"Partitura"},audio:{icon:"♪",label:"Audio"},sibelius:{icon:"✎",label:"Sibelius"},other:{icon:"▤",label:"Documento"}};
+/** Orden alfabético natural en español, sin que «¡», «¿» o comillas manden al final. */
+const sortKey=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/^[^a-zA-Z0-9]+/,"").toLocaleLowerCase("es");
 function folderKey(name:string){
  return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g," ").trim();
 }
@@ -64,7 +81,8 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
    else map.set(key,{key,name,files:[item],outside});
   }
   return [...map.values()].filter(g=>(g.name+" "+g.files.map(x=>x.title).join(" ")).toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es")))
-   .sort((a,b)=>a.name.localeCompare(b.name,"es"));
+   .map(f=>({...f,files:[...f.files].sort((a,b)=>kindOrder[kindOf(a.mime_type)]-kindOrder[kindOf(b.mime_type)]||a.title.localeCompare(b.title,"es"))}))
+   .sort((a,b)=>sortKey(a.name).localeCompare(sortKey(b.name),"es"));
  },[scores,parts,selectedPart,query]);
  async function openScore(s:Score){
   setError("");
@@ -138,15 +156,34 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   </div>
   {error&&<p role="alert" className="formError">{error}</p>}
   {message&&<p role="status" className="formSuccess">{message}</p>}
-  {loading?<p className="muted">Cargando biblioteca…</p>:folders.length===0?<p className="muted">No hay marchas para estos filtros.</p>:[false,true].map(outside=>{const list=folders.filter(f=>f.outside===outside);if(!list.length)return null;return <div key={String(outside)}>{outside&&<div className="outsideHeading"><h2>Fuera de repertorio</h2><p className="muted small">Marchas que no tocamos en la agrupación, para estudiar o conocer.</p></div>}<div className="marchFolderGrid">{list.map(folder=><article key={folder.key} className={"marchFolder"+(folder.outside?" outside":"")}>
-    <button type="button" className="marchFolderHeader" aria-expanded={expanded===folder.key} onClick={()=>setExpanded(old=>old===folder.key?null:folder.key)}>
-     <span className="marchFolderIcon" aria-hidden="true">▣</span><span className="marchFolderText"><strong>{folder.name}</strong><small>{folder.files.length} {folder.files.length===1?"archivo":"archivos"} · {folder.files.some(f=>f.mime_type==="application/pdf"||f.mime_type.startsWith("image/"))?"Partitura":""} {folder.files.some(f=>f.mime_type.startsWith("audio/"))?"· Audio":""}</small></span><span aria-hidden="true">{expanded===folder.key?"−":"+"}</span>
-    </button>
-    {expanded===folder.key&&<div className="marchFolderContents">{folder.files.map(item=><div className="marchFile" key={item.id}>
-     <div><strong>{item.title}</strong><small>{types[item.mime_type]??"Archivo"} · {parts.find(p=>p.id===item.musical_part_id)?.name??"Hilo musical"}</small></div>
-     <button className="primaryButton" type="button" onClick={()=>void openScore(item)}>{item.mime_type==="application/pdf"||item.mime_type.startsWith("image/")?"Modo atril":"Abrir"}</button>
-    </div>)}</div>}
-   </article>)}</div></div>;})}
+  {loading?<p className="muted">Cargando biblioteca…</p>:folders.length===0?<p className="muted">No hay marchas para estos filtros.</p>:[false,true].map(outside=>{
+   const list=folders.filter(f=>f.outside===outside);if(!list.length)return null;
+   return <div key={String(outside)} className="folderSection">
+    <div className={"folderSectionHead"+(outside?" outside":"")}>
+     <h2>{outside?"Fuera de repertorio":"Nuestro repertorio"}</h2>
+     <span className="folderCount">{list.length} {list.length===1?"marcha":"marchas"}</span>
+     {outside&&<p className="muted small">Marchas que no tocamos en la agrupación, para estudiar o conocer.</p>}
+    </div>
+    <div className="marchFolderGrid">{list.map(folder=>{
+     const open=expanded===folder.key;
+     const kinds=(["score","audio","sibelius","other"] as Kind[]).map(k=>({k,n:folder.files.filter(f=>kindOf(f.mime_type)===k).length})).filter(x=>x.n>0);
+     return <article key={folder.key} className={"marchFolder"+(folder.outside?" outside":"")+(open?" open":"")}>
+      <button type="button" className="marchFolderHeader" aria-expanded={open} onClick={()=>setExpanded(old=>old===folder.key?null:folder.key)}>
+       <span className="marchFolderIcon" aria-hidden="true">{sortKey(folder.name).charAt(0).toLocaleUpperCase("es")||"♫"}</span>
+       <span className="marchFolderText"><strong>{folder.name}</strong>
+        <span className="marchChips">{kinds.map(({k,n})=><span key={k} className={"marchChip "+k}>{kindInfo[k].icon} {kindInfo[k].label}{n>1?" ×"+n:""}</span>)}</span>
+       </span>
+       <span className="marchChevron" aria-hidden="true">›</span>
+      </button>
+      <div className="marchFolderBody"><div className="marchFolderContents">{folder.files.map(item=>{
+       const kind=kindOf(item.mime_type);const variant=variantLabel(item.title);
+       return <div className={"marchFile "+kind} key={item.id}>
+        <span className="marchFileIcon" aria-hidden="true">{kindInfo[kind].icon}</span>
+        <div><strong>{variant?kindInfo[kind].label+" · "+variant:kindInfo[kind].label}</strong><small>{types[item.mime_type]??"Archivo"}{canUpload?" · "+(parts.find(p=>p.id===item.musical_part_id)?.name??"Hilo musical"):""}</small></div>
+        <button className={kind==="score"?"primaryButton":"secondaryButton"} type="button" tabIndex={open?0:-1} onClick={()=>void openScore(item)}>{kind==="score"?"Modo atril":kind==="audio"?"Escuchar":"Abrir"}</button>
+       </div>;})}</div></div>
+     </article>;})}</div>
+   </div>;})}
   </section>
   {view&&(view.mime==="application/pdf"||view.mime.startsWith("image/")?<ScoreStand url={view.url} title={view.title} mime={view.mime} onClose={()=>setView(null)}/>:<section className="scoreViewer" role="dialog" aria-label={view.title}><div className="scoreViewTop"><strong>{view.title}</strong><button className="secondaryButton" onClick={()=>setView(null)}>Cerrar</button></div>
     {view.mime.startsWith("audio/")?<audio controls autoPlay src={view.url}/>:<p className="muted">Este formato no tiene visor integrado. Solicita una versión PDF para utilizar el modo atril.</p>}
