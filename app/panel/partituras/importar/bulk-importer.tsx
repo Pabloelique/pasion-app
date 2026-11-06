@@ -4,7 +4,7 @@ import Link from "next/link";
 import {getSupabaseBrowser} from "@/lib/supabase/client";
 
 type Part={id:number;name:string};
-type Entry={file:File;path:string;title:string;partId:number|null;full:boolean;issue:string;done:boolean};
+type Entry={file:File;path:string;title:string;partId:number|null;full:boolean;outside:boolean;issue:string;done:boolean};
 const types:Record<string,string>={pdf:"application/pdf",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",mp3:"audio/mpeg",wav:"audio/wav",m4a:"audio/mp4",sib:"application/octet-stream",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"};
 const norm=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 function partName(str:string){
@@ -40,13 +40,14 @@ export default function BulkImporter(){
    const path=file.webkitRelativePath||file.name;
    const seg=path.split("/").filter(Boolean);
    const full=seg.some(x=>norm(x).includes("guiones completos"));
+   const outside=!full&&seg.some(x=>norm(x).includes("fuera de repertorio"));
    const sub=seg.at(-2)||"";
    const title=full?file.name.replace(/\.[^.]+$/,"").replace(/[-_ ]*(partitura completa|guion completo|guion do)\s*$/i,"").trim():seg.at(-3)||file.name.replace(/\.[^.]+$/,"");
    const ext=file.name.split(".").pop()?.toLowerCase()||"";
    const candidate=partName(sub)||partName(file.name);
    const found=parts.find(p=>norm(p.name)===norm(candidate));
    const issue=!types[ext]?"Formato no compatible":file.size>20*1024*1024?"Supera 20 MB":full&&!["pdf","mp3","wav","m4a","sib"].includes(ext)?"No admitido para guiones":!full&&!found?"Asignar instrumento":!full&&seg.length<3?"Revisar carpeta de marcha":"";
-   return {file,path,title,partId:found?.id??null,full,issue,done:false};
+   return {file,path,title,partId:found?.id??null,full,outside,issue,done:false};
   }));setReport([]);setInfo("");
  }
  function adjust(i:number,delta:Partial<Entry>){setRows(prev=>prev.map((r,j)=>i===j?{...r,...delta,issue:delta.partId!==undefined||delta.full!==undefined?"":r.issue}:r));}
@@ -71,7 +72,7 @@ export default function BulkImporter(){
      const up=await db.storage.from("partituras").upload(path,item.file,{contentType:mime,upsert:false});
      if(up.error)throw up.error;
      const base={title:item.title.trim().slice(0,160),storage_path:path,mime_type:mime,import_hash:hash};
-     const result=item.full?await db.from("full_scores").insert(base):await db.from("march_scores").insert({...base,musical_part_id:item.partId});
+     const result=item.full?await db.from("full_scores").insert(base):await db.from("march_scores").insert({...base,musical_part_id:item.partId,outside_repertoire:item.outside});
      if(result.error)throw Error("Archivo almacenado en "+path+" pero falló el catálogo: "+result.error.message);
      if(item.full)seenFull.add(hash);else seen.add(key);
      notes.push("Importado: "+item.path);
@@ -95,6 +96,7 @@ export default function BulkImporter(){
  <label className="scoreImportLabel">Marcha<input value={r.title} disabled={busy||r.done} onChange={e=>adjust(i,{title:e.target.value})}/></label>
  <label className="scoreImportLabel">Destino<select disabled={busy||r.done} value={r.full?"full":r.partId??""} onChange={e=>adjust(i,e.target.value==="full"?{full:true,partId:null}:{full:false,partId:Number(e.target.value)||null})}>
  <option value="">Sin asignar</option><option value="full">Guiones completos (directiva)</option>{parts.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>
+ <label className="checkLabel"><input type="checkbox" checked={r.outside} disabled={busy||r.done||r.full} onChange={e=>adjust(i,{outside:e.target.checked})}/> Fuera de repertorio</label>
  <p className={r.issue?"formError":"muted small"}>{r.done?"Completado / duplicado":r.issue||"Preparado"}</p></article>)}</div>
  <h2>3. Importar</h2><p className="muted">{info}</p><button className="primaryButton" disabled={busy||!ready} onClick={()=>void start()}>{busy?"Importando…":"Importar "+ready+" archivos"}</button>{busy&&<p className="muted">Procesados {progress}</p>}
  {report.length>0&&<details className="scoreImportReport"><summary>Informe de resultados ({report.length})</summary><pre>{report.join("\n")}</pre></details>}

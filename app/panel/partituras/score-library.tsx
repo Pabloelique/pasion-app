@@ -3,10 +3,10 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "@/lib/app-data";
 import ScoreStand from "./score-stand";
 import {useAppDatabase,useDemoMode} from "@/lib/app-data";
-type Score={id:string;title:string;musical_part_id:number;storage_path:string;mime_type:string;created_at:string};
+type Score={id:string;title:string;musical_part_id:number;storage_path:string;mime_type:string;created_at:string;outside_repertoire?:boolean};
 type Part={id:number;name:string};
 const types:Record<string,string>={"application/pdf":"PDF","image/jpeg":"Imagen JPEG","image/png":"Imagen PNG","image/webp":"Imagen WebP","audio/mpeg":"Audio MP3","audio/wav":"Audio WAV","audio/x-wav":"Audio WAV","audio/mp4":"Audio M4A","application/vnd.openxmlformats-officedocument.wordprocessingml.document":"Word DOCX"};
-type Folder={key:string;name:string;files:Score[]};
+type Folder={key:string;name:string;files:Score[];outside:boolean};
 function marchName(title:string,parts:Part[]){
  let result=title.trim().replace(/\.(pdf|mp3|wav|m4a|jpg|jpeg|png|webp|docx|sib)$/i,"").trim();
  const names=[...parts.map(p=>p.name),"guion completo","partitura general","audio","mp3","pdf"].sort((a,b)=>b.length-a.length);
@@ -36,6 +36,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  const [name,setName]=useState("");
  const [uploadPart,setUploadPart]=useState("");
  const [file,setFile]=useState<File|null>(null);
+ const [outsideUpload,setOutsideUpload]=useState(false);
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -44,7 +45,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
  const [expanded,setExpanded]=useState<string|null>(null);
  async function reload(){
   setLoading(true);setError("");
-  const [s,p]=await Promise.all([db.from("march_scores").select("id,title,musical_part_id,storage_path,mime_type,created_at").order("title"),db.from("musical_parts").select("id,name").order("id")]);
+  const [s,p]=await Promise.all([db.from("march_scores").select("id,title,musical_part_id,storage_path,mime_type,created_at,outside_repertoire").order("title"),db.from("musical_parts").select("id,name").order("id")]);
   if(s.error)setError(s.error.message);else setScores((s.data??[]) as Score[]);
   if(p.error)setError(p.error.message);else {const arr=(p.data??[]) as Part[];setParts(arr);setUploadPart(old=>old||String(arr[0]?.id??""));}
   if(canUpload){const {data:all,error:fullError}=await db.from("full_scores").select("id,title,storage_path,mime_type,created_at").order("title");if(!fullError)setFullScores((all??[]) as Score[]);}
@@ -56,10 +57,11 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   const map=new Map<string,Folder>();
   for(const item of visible){
    const name=marchName(item.title,parts);
-   const key=folderKey(name);
+   const outside=Boolean(item.outside_repertoire);
+   const key=(outside?"fuera:":"")+folderKey(name);
    const folder=map.get(key);
    if(folder)folder.files.push(item);
-   else map.set(key,{key,name,files:[item]});
+   else map.set(key,{key,name,files:[item],outside});
   }
   return [...map.values()].filter(g=>(g.name+" "+g.files.map(x=>x.title).join(" ")).toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es")))
    .sort((a,b)=>a.name.localeCompare(b.name,"es"));
@@ -101,9 +103,9 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   try{
    const {error:storageError}=await db.storage.from("partituras").upload(path,file,{contentType:file.type,upsert:false});
    if(storageError)throw storageError;
-   const {error:recordError}=await db.from("march_scores").insert({title:name.trim(),musical_part_id:Number(uploadPart),storage_path:path,mime_type:file.type});
+   const {error:recordError}=await db.from("march_scores").insert({title:name.trim(),musical_part_id:Number(uploadPart),storage_path:path,mime_type:file.type,outside_repertoire:outsideUpload});
    if(recordError)throw recordError;
-   setName("");setFile(null);setMessage("Archivo subido y publicado para el instrumento seleccionado.");await reload();
+   setName("");setFile(null);setMessage(outsideUpload?"Archivo subido en «Fuera de repertorio».":"Archivo subido y publicado para el instrumento seleccionado.");setOutsideUpload(false);await reload();
   }catch(err){setError(err instanceof Error?err.message:"No se pudo subir el archivo. Comprueba la migración SQL.");}
   finally{setBusy(false);}
  }
@@ -115,6 +117,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
    <label>Título de la marcha o material<input value={name} onChange={e=>setName(e.target.value)} maxLength={160} placeholder="Ej. La Pasión — Corneta 1" required/></label>
    <label>Hilo musical<select value={uploadPart} onChange={e=>setUploadPart(e.target.value)} required>{parts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
    <label>Archivo<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.docx" onChange={e=>setFile(e.target.files?.[0]??null)} required/></label>
+   <label className="checkLabel"><input type="checkbox" checked={outsideUpload} onChange={e=>setOutsideUpload(e.target.checked)}/> Fuera de repertorio (marcha que no tocamos; aparece al final, en su propio apartado)</label>
    <p className="muted small">Formatos admitidos en la app: PDF, imágenes, audio y DOCX. Límite: 20 MB por archivo.</p>
    <button className="primaryButton" type="submit" disabled={busy||!parts.length}>{busy?"Subiendo…":"Subir material"}</button>
   </form></section>}
@@ -135,7 +138,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
   </div>
   {error&&<p role="alert" className="formError">{error}</p>}
   {message&&<p role="status" className="formSuccess">{message}</p>}
-  {loading?<p className="muted">Cargando biblioteca…</p>:folders.length===0?<p className="muted">No hay marchas para estos filtros.</p>:<div className="marchFolderGrid">{folders.map(folder=><article key={folder.key} className="marchFolder">
+  {loading?<p className="muted">Cargando biblioteca…</p>:folders.length===0?<p className="muted">No hay marchas para estos filtros.</p>:[false,true].map(outside=>{const list=folders.filter(f=>f.outside===outside);if(!list.length)return null;return <div key={String(outside)}>{outside&&<div className="outsideHeading"><h2>Fuera de repertorio</h2><p className="muted small">Marchas que no tocamos en la agrupación, para estudiar o conocer.</p></div>}<div className="marchFolderGrid">{list.map(folder=><article key={folder.key} className={"marchFolder"+(folder.outside?" outside":"")}>
     <button type="button" className="marchFolderHeader" aria-expanded={expanded===folder.key} onClick={()=>setExpanded(old=>old===folder.key?null:folder.key)}>
      <span className="marchFolderIcon" aria-hidden="true">▣</span><span className="marchFolderText"><strong>{folder.name}</strong><small>{folder.files.length} {folder.files.length===1?"archivo":"archivos"} · {folder.files.some(f=>f.mime_type==="application/pdf"||f.mime_type.startsWith("image/"))?"Partitura":""} {folder.files.some(f=>f.mime_type.startsWith("audio/"))?"· Audio":""}</small></span><span aria-hidden="true">{expanded===folder.key?"−":"+"}</span>
     </button>
@@ -143,7 +146,7 @@ export default function ScoreLibrary({role,partId}:{role:string;partId:number|nu
      <div><strong>{item.title}</strong><small>{types[item.mime_type]??"Archivo"} · {parts.find(p=>p.id===item.musical_part_id)?.name??"Hilo musical"}</small></div>
      <button className="primaryButton" type="button" onClick={()=>void openScore(item)}>{item.mime_type==="application/pdf"||item.mime_type.startsWith("image/")?"Modo atril":"Abrir"}</button>
     </div>)}</div>}
-   </article>)}</div>}
+   </article>)}</div></div>;})}
   </section>
   {view&&(view.mime==="application/pdf"||view.mime.startsWith("image/")?<ScoreStand url={view.url} title={view.title} mime={view.mime} onClose={()=>setView(null)}/>:<section className="scoreViewer" role="dialog" aria-label={view.title}><div className="scoreViewTop"><strong>{view.title}</strong><button className="secondaryButton" onClick={()=>setView(null)}>Cerrar</button></div>
     {view.mime.startsWith("audio/")?<audio controls autoPlay src={view.url}/>:<p className="muted">Este formato no tiene visor integrado. Solicita una versión PDF para utilizar el modo atril.</p>}
