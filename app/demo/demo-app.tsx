@@ -50,6 +50,7 @@ export default function DemoApp({section="inicio"}:{section?:string}){
    <Link href={demoHref("/panel")}><span aria-hidden="true">⌂</span><span>Inicio</span></Link>
    <Link href={demoHref("/panel/calendario")}><span aria-hidden="true">▦</span><span>Calendario</span></Link>
    <Link href={demoHref("/panel/partituras")}><span aria-hidden="true">♫</span><span>Partituras</span></Link>
+   <Link href={demoHref("/panel/afinador")}><span aria-hidden="true">♩</span><span>Afinador</span></Link>
    <Link href={demoHref("/panel/notificaciones")}><span aria-hidden="true">♧</span><span>Avisos</span></Link>
   </nav>
  </DemoDataProvider>;
