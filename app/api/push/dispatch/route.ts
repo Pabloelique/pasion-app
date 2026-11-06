@@ -37,7 +37,7 @@ export async function POST(request:NextRequest){
   return NextResponse.json({sent:0,reason:"Actualización sin contenido nuevo"});
  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data:notice,error:noticeError}=await db.from("app_notifications")
-  .select("id,user_id,kind,title,message,destination").eq("id",input.record.id).maybeSingle();
+  .select("id,user_id,kind,source_id,title,message,destination").eq("id",input.record.id).maybeSingle();
  if(noticeError)return NextResponse.json({error:"No se pudo consultar el aviso"},{status:500});
  if(!notice)return NextResponse.json({sent:0,reason:"Aviso inexistente"});
  const {data:member,error:memberError}=await db.from("profiles")
@@ -49,6 +49,22 @@ export async function POST(request:NextRequest){
  const {data:devices,error:deviceError}=await db.from("push_subscriptions")
   .select("id,endpoint,p256dh,auth_key").eq("user_id",notice.user_id).limit(30);
  if(deviceError)return NextResponse.json({error:"No se pudieron consultar dispositivos"},{status:500});
+ // Avisos de ensayos y actuaciones: enlazan al evento y, si aún no ha respondido, ofrecen botones de asistencia.
+ const eventKinds=["ensayo","actuacion","evento","recordatorio","recordatorio_2h"];
+ let target="/panel/notificaciones#aviso-"+notice.id;
+ let eventId:string|null=null;
+ let actions:{action:string;title:string}[]=[];
+ if(eventKinds.includes(notice.kind)&&uuid(notice.source_id)){
+  const {data:event}=await db.from("band_events").select("id,starts_at,cancelled_at").eq("id",notice.source_id).maybeSingle();
+  if(event){
+   target="/panel/calendario#evento-"+event.id;
+   if(!event.cancelled_at&&Date.parse(event.starts_at)>Date.now()){
+    const {data:answer}=await db.from("event_responses").select("response").eq("event_id",event.id).eq("user_id",notice.user_id).maybeSingle();
+    if(!answer){eventId=event.id;actions=[{action:"asistire",title:"✅ Asistiré"},{action:"no_asistire",title:"❌ No podré ir"}];}
+   }
+  }
+ }
+ if((notice.kind==="cumpleanos"||notice.kind==="comunicado")&&uuid(notice.source_id))target="/panel/tablon#anuncio-"+notice.source_id;
  webpush.setVapidDetails(subject,publicKey,privateKey);
  let sent=0;let failed=0;
  for(const device of devices??[]){
@@ -59,7 +75,7 @@ export async function POST(request:NextRequest){
    await webpush.sendNotification(
     {endpoint:device.endpoint,keys:{p256dh:device.p256dh,auth:device.auth_key}},
     JSON.stringify({title:notice.title,body:notice.message||"Tienes una novedad en PASIÓN APP.",
-     url:"/panel/notificaciones#aviso-"+notice.id,
+     url:target,eventId,actions,
      tag:"pasion-"+notice.id}),
     {TTL:86400,urgency:"normal",timeout:6500}
    );

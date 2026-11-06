@@ -1,6 +1,7 @@
 "use client";
 import Link from "@/lib/app-data";
 import LogoutButton from "./salir";
+import DashboardExtras from "./dashboard-extras";
 type EventItem={id:string;title:string;event_type:string;location:string;starts_at:string};
 type PostItem={id:string;title:string;content:string;priority:string;created_at:string};
 type ResponseItem={event_id:string;response:string};
@@ -14,6 +15,7 @@ const shortcuts=[
  {href:"/panel/partituras",icon:"♫",name:"Partituras",detail:"Tu repertorio e instrumentos"},
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
  {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
+ {href:"/panel/afinador",icon:"♩",name:"Afinador y metrónomo",detail:"Afina según tu instrumento"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
  {href:"/panel/votaciones",icon:"◉",name:"Votación de nuevas marchas",detail:"Propuestas de nuevas marchas"},
@@ -38,6 +40,7 @@ export default function MusicianDashboard({profile,events,posts,responseItems,op
     <Link className="secondaryButton linkButton" href="/panel/partituras">Mis partituras</Link>
    </div>
   </section>
+  <DashboardExtras/>
   {issues&&<p className="muted dashboardNotice">Algunos datos no se han podido actualizar. Puedes acceder a cada apartado desde los enlaces inferiores.</p>}
   <section className="dashboardStats" aria-label="Resumen de actividad">
    <div><span>Notificaciones sin leer</span><strong>{unread??"—"}</strong><small><Link href="/panel/notificaciones" className="dashboardStatLink">Ver bandeja</Link></small></div>

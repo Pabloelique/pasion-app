@@ -3,6 +3,7 @@ import Link from "next/link";
 import {getSupabaseServer} from "@/lib/supabase/server";
 import LogoutButton from "./salir";
 import MusicianDashboard from "./musician-dashboard";
+import DashboardExtras from "./dashboard-extras";
 
 export const dynamic="force-dynamic";
 
@@ -19,6 +20,7 @@ const shortcuts=[
  {href:"/panel/partituras",icon:"♫",name:"Partituras",detail:"Tu repertorio e instrumentos"},
  {href:"/panel/ensayos",icon:"♬",name:"Plan de ensayos",detail:"Marchas y objetivos de trabajo"},
  {href:"/panel/repertorio",icon:"♫",name:"Repertorio oficial",detail:"Marchas con YouTube y Spotify"},
+ {href:"/panel/afinador",icon:"♩",name:"Afinador y metrónomo",detail:"Afina según tu instrumento"},
  {href:"/panel/mi-asistencia",icon:"✓",name:"Mi asistencia",detail:"Presencias y faltas registradas"},
  {href:"/panel/tablon",icon:"☷",name:"Tablón",detail:"Comunicados y conversación"},
  {href:"/panel/votaciones",icon:"◉",name:"Votación de nuevas marchas",detail:"Propuestas de nuevas marchas"},
@@ -86,6 +88,7 @@ export default async function PanelPage(){
     <Link className="secondaryButton linkButton" href="/panel/partituras">Mis partituras</Link>
    </div>
   </section>
+  <DashboardExtras/>
   {issues&&<p className="muted dashboardNotice">Algunos datos no se han podido actualizar. Puedes acceder a cada apartado desde los enlaces inferiores.</p>}
   <section className="dashboardStats" aria-label="Resumen de actividad">
    <div><span>Notificaciones sin leer</span><strong>{unread??"—"}</strong><small><Link href="/panel/notificaciones" className="dashboardStatLink">Ver bandeja</Link></small></div>

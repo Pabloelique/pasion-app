@@ -13,6 +13,7 @@ import MyAttendance from "../panel/mi-asistencia/my-attendance";
 import BulletinBoard from "../panel/tablon/bulletin-board";
 import Voting from "../panel/votaciones/voting";
 import Notifications from "../panel/notificaciones/notifications";
+import MusicTools from "../panel/afinador/tools";
 export default function DemoApp({section="inicio"}:{section?:string}){
  const [local,setLocal]=useState<Awaited<ReturnType<typeof openDemoDatabase>>|null>(null);
  useEffect(()=>{
@@ -30,6 +31,7 @@ export default function DemoApp({section="inicio"}:{section?:string}){
  :section==="mi-asistencia"?<MyAttendance/>
  :section==="tablon"?<BulletinBoard role="musico" userId={DEMO_USER}/>
  :section==="votaciones"?<Voting role="musico" userId={DEMO_USER}/>
+ :section==="afinador"?<MusicTools partName="Trompeta"/>
  :<Notifications userId={DEMO_USER}/>;
  return <DemoDataProvider db={client as unknown as ReturnType<typeof getSupabaseBrowser>}>
   <aside className="container notice" aria-label="Aviso de demostración">

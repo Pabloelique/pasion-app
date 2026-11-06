@@ -10,8 +10,8 @@ export function noticeLink(kind:string,id:string,destination:string){
  if(validId(id)){
   if(kind==="ausencia")return "/panel/justificaciones#falta-"+id;
   if(kind==="votacion"||kind==="aportacion")return "/panel/votaciones#votacion-"+id;
-  if(["ensayo","actuacion","evento"].includes(kind))return "/panel/calendario#evento-"+id;
-  if(kind==="comunicado")return "/panel/tablon#anuncio-"+id;
+  if(["ensayo","actuacion","evento","recordatorio","recordatorio_2h"].includes(kind))return "/panel/calendario#evento-"+id;
+  if(kind==="comunicado"||kind==="cumpleanos")return "/panel/tablon#anuncio-"+id;
  }
  return safeAppLink(destination)??"/panel/notificaciones";
 }

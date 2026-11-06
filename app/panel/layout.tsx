@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PresenceTracker from "./presence-tracker";
 import PushSettings from "./notificaciones/push-settings";
+import BirthdayPrompt from "./birthday-prompt";
 import {redirect} from "next/navigation";
 import {getSupabaseServer} from "@/lib/supabase/server";
 
@@ -16,6 +17,7 @@ export default async function PanelLayout({children}:{children:React.ReactNode})
  return <>
   {approved&&user&&<PushSettings userId={user.id} required/>}
   {approved&&<PresenceTracker/>}
+  {approved&&user&&<BirthdayPrompt userId={user.id}/>}
   {children}
   {approved&&<nav className="mobilePanelNav" aria-label="Navegación principal">
    <Link href="/panel"><span aria-hidden="true">⌂</span><span>Inicio</span></Link>

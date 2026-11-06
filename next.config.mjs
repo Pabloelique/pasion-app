@@ -7,7 +7,7 @@ const nextConfig={
    {key:"X-Frame-Options",value:"DENY"},
    {key:"Referrer-Policy",value:"no-referrer"},
    {key:"Content-Security-Policy",value:"frame-ancestors 'none'; object-src 'none'; base-uri 'self'"},
-   {key:"Permissions-Policy",value:"camera=(), microphone=(), geolocation=()"}
+   {key:"Permissions-Policy",value:"camera=(), microphone=(self), geolocation=()"}
   ]}];
  }
 };
